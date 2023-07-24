@@ -29,6 +29,8 @@
     "format-test": "prettier-check '**/*.js'"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^14.0.0",
     "@types/react": "^16.0.38",
     "babel-cli": "^6.6.4",
     "babel-core": "^6.26.3",
@@ -57,12 +59,14 @@
     "prettier-quick": "0.0.5",
     "pretty-quick": "^2.0.1",
     "prop-types": "^15.7.2",
-    "react": "^15.0.0",
+    "react": "18.2.0",
     "react-addons-test-utils": "^15.6.2",
-    "react-dom": "^15.0.0",
+    "react-dom": "18.2.0",
     "rimraf": "^2.6.1",
     "shx": "^0.3.3",
     "sinon": "^1.17.3",
+    "typescript": "^5.1.6",
+    "vitest": "^0.33.0",
     "watch": "^1.0.2"
   },
   "peerDependencies": {
@@ -80,5 +84,7 @@
     }
   },
   "main": "lib/index.js",
-  "types": "types/react-datasheet.d.ts"
+  "types": "types/react-datasheet.d.ts",
+  "packageManager": "yarn@3.6.1",
+  "type": "module"
 }
