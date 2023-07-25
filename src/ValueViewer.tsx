@@ -8,8 +8,8 @@ type ValueViewerProps = {
   value: unknown
 }
 
-const ValueViewer: FC<ValueViewerProps> = ({ value }) => {
-  return <span className="value-viewer">{value}</span>
-}
+const ValueViewer: FC<ValueViewerProps> = ({ value }) => (
+  <span className="value-viewer">{value}</span>
+)
 
 export default ValueViewer

@@ -1,19 +1,16 @@
-import React, { PureComponent } from 'react';
-import PropTypes from 'prop-types';
+import { FC, ReactNode } from 'react'
+import PropTypes from 'prop-types'
 
-class Sheet extends PureComponent {
-  render() {
-    return (
-      <table className={this.props.className}>
-        <tbody>{this.props.children}</tbody>
-      </table>
-    );
-  }
+type SheetProps = {
+  className?: string
+  data: any[]
+  children: ReactNode
 }
 
-Sheet.propTypes = {
-  className: PropTypes.string,
-  data: PropTypes.array.isRequired,
-};
+const Sheet: FC<SheetProps> = ({ className, children, data }) => (
+  <table className={className}>
+    <tbody>{children}</tbody>
+  </table>
+)
 
-export default Sheet;
+export default Sheet

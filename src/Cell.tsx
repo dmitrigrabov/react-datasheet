@@ -56,3 +56,5 @@ const Cell: FC<CellProps> = ({
     </td>
   )
 }
+
+export default Cell
