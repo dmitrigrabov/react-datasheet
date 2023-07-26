@@ -26,9 +26,13 @@
     "test": "NODE_ENV=test nyc --  mocha ./test/**/*.js --require babel-core/register",
     "test:watch": "watch 'npm run test' ./test ./src",
     "format": "prettier --write '{src,test}/**/*.js' --ignore-path docs,.gitignore",
-    "format-test": "prettier-check '**/*.js'"
+    "format-test": "prettier-check '**/*.js'",
+    "vitest": "vitest",
+    "vitest:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^14.0.0",
     "@types/react": "^16.0.38",
     "babel-cli": "^6.6.4",
     "babel-core": "^6.26.3",
@@ -63,6 +67,8 @@
     "rimraf": "^2.6.1",
     "shx": "^0.3.3",
     "sinon": "^1.17.3",
+    "typescript": "^5.1.6",
+    "vitest": "^0.33.0",
     "watch": "^1.0.2"
   },
   "peerDependencies": {
@@ -81,5 +87,6 @@
   },
   "main": "lib/index.js",
   "types": "types/react-datasheet.d.ts",
-  "packageManager": "yarn@3.6.1"
+  "packageManager": "yarn@3.6.1",
+  "type": "module"
 }
