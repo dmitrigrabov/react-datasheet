@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import { Component, ComponentType, FC, PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -30,26 +30,49 @@ function widthStyle(cell) {
   return width ? { width } : null;
 }
 
-export default class DataCell extends PureComponent {
-  constructor(props) {
-    super(props);
-    this.handleChange = this.handleChange.bind(this);
-    this.handleCommit = this.handleCommit.bind(this);
-    this.handleRevert = this.handleRevert.bind(this);
+type DataCellProps = {
+  row: number
+  col: number
+  cell: CellShape,
+  forceEdit?: boolean,
+  selected?: boolean,
+  editing?: boolean,
+  editValue: unknown,
+  clearing?: boolean,
+  cellRenderer?: ComponentType,
+  valueRenderer: () => void,
+  dataRenderer?: () => void,
+  valueViewer?: () => void,
+  dataEditor?: () => void,
+  attributesRenderer?: () => void,
+  onNavigate: () => void,
+  onMouseDown: () => void,
+  onMouseOver: () => void,
+  onDoubleClick: () => void,
+  onContextMenu: () => void,
+  onChange: () => void,
+  onRevert: () => void,
+  onEdit?: () => void,
+}
 
-    this.handleKey = this.handleKey.bind(this);
-    this.handleMouseDown = this.handleMouseDown.bind(this);
-    this.handleMouseOver = this.handleMouseOver.bind(this);
-    this.handleContextMenu = this.handleContextMenu.bind(this);
-    this.handleDoubleClick = this.handleDoubleClick.bind(this);
 
-    this.state = {
-      updated: false,
-      reverting: false,
-      committing: false,
-      value: '',
-    };
-  }
+
+const DataCell:FC<DataCellProps> = ({
+  forceEdit = false,
+  selected = false,
+  editing = false,
+  clearing = false,
+  cellRenderer = Cell
+}) => {
+
+
+    // this.state = {
+    //   updated: false,
+    //   reverting: false,
+    //   committing: false,
+    //   value: '',
+    // };
+  
 
   componentDidUpdate(prevProps) {
     if (
@@ -151,6 +174,9 @@ export default class DataCell extends PureComponent {
   }
 
   renderComponent(editing, cell) {
+    if(!cell) {
+      return undefined
+    }
     const { component, readOnly, forceComponent } = cell;
     if ((editing && !readOnly) || forceComponent) {
       return component;
@@ -197,6 +223,8 @@ export default class DataCell extends PureComponent {
     } = this.props;
     const { updated } = this.state;
 
+    console.log('Cell', cell)
+
     const content =
       this.renderComponent(editing, cell) ||
       this.renderEditor(editing, cell, row, col, dataEditor) ||
@@ -237,35 +265,32 @@ export default class DataCell extends PureComponent {
   }
 }
 
-DataCell.propTypes = {
-  row: PropTypes.number.isRequired,
-  col: PropTypes.number.isRequired,
-  cell: PropTypes.shape(CellShape).isRequired,
-  forceEdit: PropTypes.bool,
-  selected: PropTypes.bool,
-  editing: PropTypes.bool,
-  editValue: PropTypes.any,
-  clearing: PropTypes.bool,
-  cellRenderer: PropTypes.func,
-  valueRenderer: PropTypes.func.isRequired,
-  dataRenderer: PropTypes.func,
-  valueViewer: PropTypes.func,
-  dataEditor: PropTypes.func,
-  attributesRenderer: PropTypes.func,
-  onNavigate: PropTypes.func.isRequired,
-  onMouseDown: PropTypes.func.isRequired,
-  onMouseOver: PropTypes.func.isRequired,
-  onDoubleClick: PropTypes.func.isRequired,
-  onContextMenu: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired,
-  onRevert: PropTypes.func.isRequired,
-  onEdit: PropTypes.func,
-};
+export default DataCell
 
-DataCell.defaultProps = {
-  forceEdit: false,
-  selected: false,
-  editing: false,
-  clearing: false,
-  cellRenderer: Cell,
-};
+// DataCell.defaultProps = {
+//   forceEdit: false,
+//   selected: false,
+//   editing: false,
+//   clearing: false,
+//   cellRenderer: Cell,
+// };
+
+// constructor(props) {
+//   super(props);
+//   this.handleChange = this.handleChange.bind(this);
+//   this.handleCommit = this.handleCommit.bind(this);
+//   this.handleRevert = this.handleRevert.bind(this);
+
+//   this.handleKey = this.handleKey.bind(this);
+//   this.handleMouseDown = this.handleMouseDown.bind(this);
+//   this.handleMouseOver = this.handleMouseOver.bind(this);
+//   this.handleContextMenu = this.handleContextMenu.bind(this);
+//   this.handleDoubleClick = this.handleDoubleClick.bind(this);
+
+//   this.state = {
+//     updated: false,
+//     reverting: false,
+//     committing: false,
+//     value: '',
+//   };
+// }

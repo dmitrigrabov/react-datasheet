@@ -13,20 +13,40 @@ overflow    'wrap'|'nowrap'| 'clip' undefined   How to render overflow text. Ove
 editor func  undefined A component used to render the cell's value when being edited
 viewer func  undefined A component used to render the cell's value when not being edited
 */
-const CellShape = {
-  readOnly: PropTypes.bool,
-  key: PropTypes.string,
-  className: PropTypes.string,
-  component: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
-  forceComponent: PropTypes.bool,
-  disableEvents: PropTypes.bool,
-  disableUpdatedFlag: PropTypes.bool,
-  colSpan: PropTypes.number,
-  rowSpan: PropTypes.number,
-  width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  overflow: PropTypes.oneOf(['wrap', 'nowrap', 'clip']),
-  dataEditor: PropTypes.func,
-  valueViewer: PropTypes.func,
-};
+// const CellShape = {
+//   readOnly: PropTypes.bool,
+//   key: PropTypes.string,
+//   className: PropTypes.string,
+//   component: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
+//   forceComponent: PropTypes.bool,
+//   disableEvents: PropTypes.bool,
+//   disableUpdatedFlag: PropTypes.bool,
+//   colSpan: PropTypes.number,
+//   rowSpan: PropTypes.number,
+//   width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+//   overflow: PropTypes.oneOf(['wrap', 'nowrap', 'clip']),
+//   dataEditor: PropTypes.func,
+//   valueViewer: PropTypes.func,
+// };
 
-export default CellShape;
+// export default CellShape;
+
+import { FC } from 'react'
+
+type CellShape = {
+  readonly?: boolean
+  key?: string
+  className?: string
+  component?: FC
+  forceComponent?: boolean
+  disableEvents?: boolean
+  disableUpdatedFlag?: boolean
+  colSpan?: number
+  rowSpan?: number
+  width?: number | string
+  overflow?: 'wrap' | 'nowrap' | 'clip'
+  dataEditor?: FC
+  valueViewer?: FC
+}
+
+export default CellShape

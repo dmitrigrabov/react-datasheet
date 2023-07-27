@@ -1,6 +1,6 @@
-import React, { PureComponent } from 'react';
-import PropTypes from 'prop-types';
-import CellShape from './CellShape';
+import React, { PureComponent } from 'react'
+import PropTypes from 'prop-types'
+import CellShape from './CellShape'
 
 export default class Cell extends PureComponent {
   render() {
@@ -15,12 +15,12 @@ export default class Cell extends PureComponent {
       onMouseOver,
       onDoubleClick,
       onContextMenu,
-    } = this.props;
+    } = this.props
 
-    const { colSpan, rowSpan } = cell;
+    const { colSpan, rowSpan } = cell
     const attributes = attributesRenderer
       ? attributesRenderer(cell, row, col)
-      : {};
+      : {}
 
     return (
       <td
@@ -37,7 +37,7 @@ export default class Cell extends PureComponent {
       >
         {this.props.children}
       </td>
-    );
+    )
   }
 }
 
@@ -55,11 +55,11 @@ Cell.propTypes = {
   onContextMenu: PropTypes.func.isRequired,
   className: PropTypes.string,
   style: PropTypes.object,
-};
+}
 
 Cell.defaultProps = {
   selected: false,
   editing: false,
   updated: false,
   attributesRenderer: () => {},
-};
+}

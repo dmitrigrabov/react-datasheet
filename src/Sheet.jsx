@@ -1,5 +1,5 @@
-import React, { PureComponent } from 'react';
-import PropTypes from 'prop-types';
+import React, { PureComponent } from 'react'
+import PropTypes from 'prop-types'
 
 class Sheet extends PureComponent {
   render() {
@@ -7,13 +7,13 @@ class Sheet extends PureComponent {
       <table className={this.props.className}>
         <tbody>{this.props.children}</tbody>
       </table>
-    );
+    )
   }
 }
 
 Sheet.propTypes = {
   className: PropTypes.string,
   data: PropTypes.array.isRequired,
-};
+}
 
-export default Sheet;
+export default Sheet
