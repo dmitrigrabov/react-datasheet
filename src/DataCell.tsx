@@ -1,6 +1,11 @@
-import { Component, ComponentType, FC, PureComponent } from 'react';
-import PropTypes from 'prop-types';
-
+import {
+  ComponentType,
+  FC,
+  KeyboardEvent,
+  MouseEvent,
+  useEffect,
+  useState,
+} from 'react'
 import {
   ENTER_KEY,
   ESCAPE_KEY,
@@ -9,260 +14,271 @@ import {
   LEFT_KEY,
   UP_KEY,
   DOWN_KEY,
-} from './keys';
+} from './keys'
+import Cell from './Cell'
+import DataEditor from './DataEditor'
+import ValueViewer from './ValueViewer'
+import { renderValue, renderData } from './renderHelpers'
+import { EditorProps, Renderer, CellShape, ValueViewerProps } from 'types'
 
-import Cell from './Cell';
-import CellShape from './CellShape';
-import DataEditor from './DataEditor';
-import ValueViewer from './ValueViewer';
-import { renderValue, renderData } from './renderHelpers';
-
-function initialData({ cell, row, col, valueRenderer, dataRenderer }) {
-  return renderData(cell, row, col, valueRenderer, dataRenderer);
-}
-
-function initialValue({ cell, row, col, valueRenderer }) {
-  return renderValue(cell, row, col, valueRenderer);
-}
-
-function widthStyle(cell) {
-  const width = typeof cell.width === 'number' ? cell.width + 'px' : cell.width;
-  return width ? { width } : null;
-}
-
-type DataCellProps = {
+type InitialDataArgs<T> = {
+  cell: CellShape<T>
   row: number
   col: number
-  cell: CellShape,
-  forceEdit?: boolean,
-  selected?: boolean,
-  editing?: boolean,
-  editValue: unknown,
-  clearing?: boolean,
-  cellRenderer?: ComponentType,
-  valueRenderer: () => void,
-  dataRenderer?: () => void,
-  valueViewer?: () => void,
-  dataEditor?: () => void,
-  attributesRenderer?: () => void,
-  onNavigate: () => void,
-  onMouseDown: () => void,
-  onMouseOver: () => void,
-  onDoubleClick: () => void,
-  onContextMenu: () => void,
-  onChange: () => void,
-  onRevert: () => void,
-  onEdit?: () => void,
+  valueRenderer: Renderer
+  dataRenderer: Renderer
 }
 
+const initialData = <T,>({
+  cell,
+  row,
+  col,
+  valueRenderer,
+  dataRenderer,
+}: InitialDataArgs<T>) => {
+  return renderData(cell, row, col, valueRenderer, dataRenderer)
+}
 
+type InitialValueArgs<T> = {
+  cell: CellShape<T>
+  row: number
+  col: number
+  valueRenderer: Renderer
+}
 
-const DataCell:FC<DataCellProps> = ({
+const initialValue = <T,>({
+  cell,
+  row,
+  col,
+  valueRenderer,
+}: InitialValueArgs<T>) => {
+  return renderValue(cell, row, col, valueRenderer)
+}
+
+const widthStyle = <T,>(cell: CellShape<T>) => {
+  const width = typeof cell.width === 'number' ? cell.width + 'px' : cell.width
+  return width ? { width } : null
+}
+
+type DataCellProps<T> = {
+  row: number
+  col: number
+  cell: CellShape<T>
+  forceEdit?: boolean
+  selected?: boolean
+  editing?: boolean
+  editValue: unknown
+  clearing?: boolean
+  cellRenderer?: ComponentType
+  valueRenderer: Renderer
+  dataRenderer: Renderer
+  valueViewer?: () => void
+  dataEditor?: () => void
+  attributesRenderer?: () => void
+  onNavigate: (event: KeyboardEvent, b: boolean) => void
+  onMouseDown: (row: number, col: number, event: MouseEvent) => void
+  onMouseOver: (row: number, col: number) => void
+  onDoubleClick: (row: number, col: number) => void
+  onContextMenu: (event: MouseEvent, row: number, col: number) => void
+  onChange: (row: number, col: number, value: string) => void
+  onRevert: () => void
+  onEdit?: () => void
+}
+
+const DataCell = <T,>({
+  cell,
+  row,
+  col,
+  valueRenderer,
+  dataRenderer,
+  onChange,
+  onNavigate,
+  onRevert,
+  onMouseDown,
+  onMouseOver,
+  onDoubleClick,
+  onContextMenu,
   forceEdit = false,
   selected = false,
   editing = false,
   clearing = false,
-  cellRenderer = Cell
-}) => {
+  cellRenderer = Cell,
+  cellRenderer: CellRenderer,
+}: DataCellProps<T>) => {
+  const [updated, setUpdated] = useState(false)
+  const [reverting, setReverting] = useState(false)
+  const [committing, setCommitting] = useState(false)
+  const [value, setValue] = useState('')
 
+  useEffect(() => {
+    return () => {
+      clearTimeout(this.timeout)
+    }
+  })
 
-    // this.state = {
-    //   updated: false,
-    //   reverting: false,
-    //   committing: false,
-    //   value: '',
-    // };
-  
+  const handleChange = (incomingValue: string) => {
+    setValue(incomingValue)
+    setCommitting(false)
+  }
 
-  componentDidUpdate(prevProps) {
+  const handleCommit = (
+    incomingValue: string,
+    e?: KeyboardEvent | undefined,
+  ) => {
     if (
-      !this.props.cell.disableUpdatedFlag &&
-      initialValue(prevProps) !== initialValue(this.props)
+      incomingValue !==
+      initialData({ cell, row, col, valueRenderer, dataRenderer })
     ) {
-      this.setState({ updated: true });
-      this.timeout = setTimeout(() => this.setState({ updated: false }), 700);
-    }
-    if (this.props.editing === true && prevProps.editing === false) {
-      const value = this.props.clearing ? '' : initialData(this.props);
-      this.setState({ value, reverting: false });
-    }
+      setValue(incomingValue)
+      setCommitting(true)
 
-    if (
-      prevProps.editing === true &&
-      this.props.editing === false &&
-      !this.state.reverting &&
-      !this.state.committing &&
-      this.state.value !== initialData(this.props)
-    ) {
-      this.props.onChange(this.props.row, this.props.col, this.state.value);
-    }
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.timeout);
-  }
-
-  handleChange(value) {
-    this.setState({ value, committing: false });
-  }
-
-  handleCommit(value, e) {
-    const { onChange, onNavigate } = this.props;
-    if (value !== initialData(this.props)) {
-      this.setState({ value, committing: true });
-      onChange(this.props.row, this.props.col, value);
+      onChange(row, col, value)
     } else {
-      this.handleRevert();
+      handleRevert()
     }
+
     if (e) {
-      e.preventDefault();
-      onNavigate(e, true);
+      e.preventDefault()
+      onNavigate(e, true)
     }
   }
 
-  handleRevert() {
-    this.setState({ reverting: true });
-    this.props.onRevert();
+  const handleRevert = () => {
+    setReverting(true)
+    onRevert()
   }
 
-  handleMouseDown(e) {
-    const { row, col, onMouseDown, cell } = this.props;
+  const handleMouseDown = (e: MouseEvent) => {
     if (!cell.disableEvents) {
-      onMouseDown(row, col, e);
+      onMouseDown(row, col, e)
     }
   }
 
-  handleMouseOver(e) {
-    const { row, col, onMouseOver, cell } = this.props;
+  const handleMouseOver = (e: MouseEvent) => {
     if (!cell.disableEvents) {
-      onMouseOver(row, col);
+      onMouseOver(row, col)
     }
   }
 
-  handleDoubleClick(e) {
-    const { row, col, onDoubleClick, cell } = this.props;
+  const handleDoubleClick = (e: MouseEvent) => {
     if (!cell.disableEvents) {
-      onDoubleClick(row, col);
+      onDoubleClick(row, col)
     }
   }
 
-  handleContextMenu(e) {
-    const { row, col, onContextMenu, cell } = this.props;
+  const handleContextMenu = (e: MouseEvent) => {
     if (!cell.disableEvents) {
-      onContextMenu(e, row, col);
+      onContextMenu(e, row, col)
     }
   }
 
-  handleKey(e) {
-    const keyCode = e.which || e.keyCode;
+  const handleKey = (e: KeyboardEvent) => {
+    const keyCode = e.which || e.keyCode
     if (keyCode === ESCAPE_KEY) {
-      return this.handleRevert();
+      return handleRevert()
     }
-    const {
-      cell: { component },
-      forceEdit,
-    } = this.props;
-    const eatKeys = forceEdit || !!component;
+
+    const { component } = cell
+
+    const eatKeys = forceEdit || !!component
     const commit =
       keyCode === ENTER_KEY ||
       keyCode === TAB_KEY ||
-      (!eatKeys && [LEFT_KEY, RIGHT_KEY, UP_KEY, DOWN_KEY].includes(keyCode));
+      (!eatKeys && [LEFT_KEY, RIGHT_KEY, UP_KEY, DOWN_KEY].includes(keyCode))
 
     if (commit) {
-      this.handleCommit(this.state.value, e);
+      handleCommit(value, e)
     }
   }
 
-  renderComponent(editing, cell) {
-    if(!cell) {
+  const renderComponent = <T,>(
+    editing: boolean,
+    incomingCell: CellShape<T>,
+  ) => {
+    if (!incomingCell) {
       return undefined
     }
-    const { component, readOnly, forceComponent } = cell;
-    if ((editing && !readOnly) || forceComponent) {
-      return component;
+
+    const { component, readonly, forceComponent } = incomingCell
+
+    if ((editing && !readonly) || forceComponent) {
+      return component
     }
   }
 
-  renderEditor(editing, cell, row, col, dataEditor) {
+  const renderEditor = <T,>(
+    editing: boolean,
+    cell: T,
+    row: number,
+    col: number,
+    dataEditor: ComponentType<EditorProps<T>>,
+  ) => {
     if (editing) {
-      const Editor = cell.dataEditor || dataEditor || DataEditor;
+      const Editor = cell.dataEditor || dataEditor || DataEditor
       return (
         <Editor
           cell={cell}
           row={row}
           col={col}
-          value={this.state.value}
-          onChange={this.handleChange}
-          onCommit={this.handleCommit}
-          onRevert={this.handleRevert}
-          onKeyDown={this.handleKey}
+          value={value}
+          onChange={handleChange}
+          onCommit={handleCommit}
+          onRevert={handleRevert}
+          onKeyDown={handleKey}
         />
-      );
+      )
     }
   }
 
-  renderViewer(cell, row, col, valueRenderer, valueViewer) {
-    const Viewer = cell.valueViewer || valueViewer || ValueViewer;
-    const value = renderValue(cell, row, col, valueRenderer);
-    return <Viewer cell={cell} row={row} col={col} value={value} />;
+  const renderViewer = <T,>(
+    cell: CellShape<T>,
+    row: number,
+    col: number,
+    valueRenderer: Renderer,
+    valueViewer: ComponentType<ValueViewerProps<T>>,
+  ) => {
+    const Viewer = cell.valueViewer || valueViewer || ValueViewer
+    const value = renderValue(cell, row, col, valueRenderer)
+    return <Viewer cell={cell} row={row} col={col} value={value} />
   }
 
-  render() {
-    const {
-      row,
-      col,
-      cell,
-      cellRenderer: CellRenderer,
-      valueRenderer,
-      dataEditor,
-      valueViewer,
-      attributesRenderer,
-      selected,
-      editing,
-      onKeyUp,
-    } = this.props;
-    const { updated } = this.state;
+  const content =
+    renderComponent(editing, cell) ||
+    renderEditor(editing, cell, row, col, dataEditor) ||
+    renderViewer(cell, row, col, valueRenderer, valueViewer)
 
-    console.log('Cell', cell)
+  const className = [
+    cell.className,
+    'cell',
+    cell.overflow,
+    selected && 'selected',
+    editing && 'editing',
+    cell.readonly && 'read-only',
+    updated && 'updated',
+  ]
+    .filter(a => a)
+    .join(' ')
 
-    const content =
-      this.renderComponent(editing, cell) ||
-      this.renderEditor(editing, cell, row, col, dataEditor) ||
-      this.renderViewer(cell, row, col, valueRenderer, valueViewer);
-
-    const className = [
-      cell.className,
-      'cell',
-      cell.overflow,
-      selected && 'selected',
-      editing && 'editing',
-      cell.readOnly && 'read-only',
-      updated && 'updated',
-    ]
-      .filter(a => a)
-      .join(' ');
-
-    return (
-      <CellRenderer
-        row={row}
-        col={col}
-        cell={cell}
-        selected={selected}
-        editing={editing}
-        updated={updated}
-        attributesRenderer={attributesRenderer}
-        className={className}
-        style={widthStyle(cell)}
-        onMouseDown={this.handleMouseDown}
-        onMouseOver={this.handleMouseOver}
-        onDoubleClick={this.handleDoubleClick}
-        onContextMenu={this.handleContextMenu}
-        onKeyUp={onKeyUp}
-      >
-        {content}
-      </CellRenderer>
-    );
-  }
+  return (
+    <CellRenderer
+      row={row}
+      col={col}
+      cell={cell}
+      selected={selected}
+      editing={editing}
+      updated={updated}
+      attributesRenderer={attributesRenderer}
+      className={className}
+      style={widthStyle(cell)}
+      onMouseDown={handleMouseDown}
+      onMouseOver={handleMouseOver}
+      onDoubleClick={handleDoubleClick}
+      onContextMenu={handleContextMenu}
+      onKeyUp={onKeyUp}
+    >
+      {content}
+    </CellRenderer>
+  )
 }
 
 export default DataCell
@@ -293,4 +309,28 @@ export default DataCell
 //     committing: false,
 //     value: '',
 //   };
+// }
+
+// componentDidUpdate(prevProps) {
+//   if (
+//     !this.props.cell.disableUpdatedFlag &&
+//     initialValue(prevProps) !== initialValue(this.props)
+//   ) {
+//     this.setState({ updated: true });
+//     this.timeout = setTimeout(() => this.setState({ updated: false }), 700);
+//   }
+//   if (this.props.editing === true && prevProps.editing === false) {
+//     const value = this.props.clearing ? '' : initialData(this.props);
+//     this.setState({ value, reverting: false });
+//   }
+
+//   if (
+//     prevProps.editing === true &&
+//     this.props.editing === false &&
+//     !this.state.reverting &&
+//     !this.state.committing &&
+//     this.state.value !== initialData(this.props)
+//   ) {
+//     this.props.onChange(this.props.row, this.props.col, this.state.value);
+//   }
 // }

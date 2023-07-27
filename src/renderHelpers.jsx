@@ -1,4 +1,4 @@
-export function renderValue(cell, row, col, valueRenderer) {
+export const renderValue = (cell, row, col, valueRenderer) => {
   const value = valueRenderer(cell, row, col)
   return value === null || typeof value === 'undefined' ? '' : value
 }
