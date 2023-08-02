@@ -28,6 +28,7 @@ import {
   ValueRenderer,
   CellShape,
   ValueViewerProps,
+  CellRenderer,
 } from 'types'
 
 type InitialDataArgs<T> = {
@@ -78,7 +79,7 @@ export type DataCellProps<T> = {
   editing?: boolean
   editValue?: unknown
   clearing?: boolean
-  cellRenderer?: ComponentType
+  cellRenderer?: CellRenderer<T>
   valueRenderer: ValueRenderer
   dataRenderer?: DataRenderer
   valueViewer?: ComponentType<ValueViewerProps<T>>
@@ -268,9 +269,9 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
       return undefined
     }
 
-    const { component, readonly, forceComponent } = incomingCell
+    const { component, readOnly, forceComponent } = incomingCell
 
-    if ((editing && !readonly) || forceComponent) {
+    if ((editing && !readOnly) || forceComponent) {
       return component
     }
   }
@@ -341,7 +342,7 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
     cell.overflow,
     selected && 'selected',
     editing && 'editing',
-    cell.readonly && 'read-only',
+    cell.readOnly && 'read-only',
     updated && 'updated',
   ]
     .filter(a => a)

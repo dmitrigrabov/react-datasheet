@@ -1,1 +1,5 @@
 value is always a string - for now(?)
+
+DataSheet
+- replace empty objects with undefined
+- Remove IE support
