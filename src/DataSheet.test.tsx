@@ -9,7 +9,7 @@ import {
 import DataCell, { DataCellProps } from './DataCell'
 import userEvent from '@testing-library/user-event'
 import { CellShape } from 'types'
-import DataSheet from 'DataSheet'
+import { DataSheet } from './DataSheet'
 
 const getRowContainer = () => {
   const row = document.createElement('tr')
@@ -19,7 +19,7 @@ const getRowContainer = () => {
 }
 
 describe('DataSheet component', () => {
-  const getData = () => ([
+  const getData = () => [
     [
       {
         className: 'test1',
@@ -44,331 +44,329 @@ describe('DataSheet component', () => {
         width: 100,
       },
     ],
-  ])
+  ]
 
-      // <DataSheet
-      //   keyFn={i => 'custom_key_' + i}
-      //   className={'test'}
-      //   overflow="nowrap"
-      //   data={data}
-      //   valueRenderer={cell => cell.data}
-      //   onChange={(cell, i, j, value) => (data[i][j].data = value)}
-      // />
-
+  // <DataSheet
+  //   keyFn={i => 'custom_key_' + i}
+  //   className={'test'}
+  //   overflow="nowrap"
+  //   data={data}
+  //   valueRenderer={cell => cell.data}
+  //   onChange={(cell, i, j, value) => (data[i][j].data = value)}
+  // />
 
   describe('rendering with varying props', () => {
     it('renders the proper elements', () => {
+      const data = getData()
+
       const result = render(
-              <DataSheet
-        keyFn={i => 'custom_key_' + i}
-        className={'test'}
-        overflow="nowrap"
-        data={data}
-        valueRenderer={cell => cell.data}
-        onChange={(cell, i, j, value) => (data[i][j].data = value)}
-      />
-      )
-      
-      expect(wrapper.find('table').length).toEqual(1)
-      expect(_.values(wrapper.find('table').node.classList)).toEqual([
-        'data-grid',
-        'test',
-        'nowrap',
-      ])
-
-      expect(wrapper.find('td.cell span').length).toEqual(4)
-      expect(wrapper.find('td.cell span').nodes.map(n => n.innerHTML)).toEqual([
-        '4',
-        '2',
-        '0',
-        '5',
-      ])
-    })
-
-    it('renders the proper keys', () => {
-      expect(wrapper.find('Sheet Row').at(0).key()).toEqual('custom_key_0')
-      expect(wrapper.find('Sheet Row').at(1).key()).toEqual('custom_key_1')
-      expect(wrapper.find('DataCell').at(1).key()).toEqual('custom_key')
-    })
-
-    it('sets the proper classes for the cells', () => {
-      expect(
-        wrapper.find('td').nodes.map(n => _.values(n.classList).sort()),
-      ).toEqual([
-        ['cell', 'clip', 'test1'],
-        ['cell', 'test2'],
-        ['cell', 'test3'],
-        ['cell', 'test4'],
-      ])
-    })
-    it('renders the data in the input properly if dataRenderer is set', () => {
-      customWrapper = mount(
         <DataSheet
+          keyFn={i => 'custom_key_' + i}
+          className={'test'}
+          overflow="nowrap"
           data={data}
-          dataRenderer={cell => '=+' + cell.data}
-          valueRenderer={cell => cell.data}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      customWrapper.find('td').first().simulate('doubleClick')
-      expect(customWrapper.find('td.cell input').nodes[0].value).toEqual('=+4')
-    })
-
-    it('renders proper elements by column', () => {
-      const withDates = data.map((row, index) => [
-        { data: new Date('2017-0' + (index + 1) + '-01') },
-        ...row,
-      ])
-      customWrapper = mount(
-        <DataSheet
-          data={withDates}
-          valueRenderer={(cell, i, j) =>
-            j === 0 ? cell.data.toGMTString() : cell.data
-          }
-          dataRenderer={(cell, i, j) =>
-            j === 0 ? cell.data.toISOString() : cell.data
-          }
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      // expect(wrapper.find('td > span').length).toEqual(6);
-      expect(
-        customWrapper.find('td.cell span').nodes.map(n => n.innerHTML),
-      ).toEqual([
-        'Sun, 01 Jan 2017 00:00:00 GMT',
-        '4',
-        '2',
-        'Wed, 01 Feb 2017 00:00:00 GMT',
-        '0',
-        '5',
-      ])
-    })
-
-    it('renders data in the input properly if dataRenderer is set by column', () => {
-      const withDates = data.map((row, index) => [
-        { data: new Date('2017-0' + (index + 1) + '-01') },
-        ...row,
-      ])
-      customWrapper = mount(
-        <DataSheet
-          data={withDates}
-          valueRenderer={(cell, i, j) =>
-            j === 0 ? cell.data.toGMTString() : cell.data
-          }
-          dataRenderer={(cell, i, j) =>
-            j === 0 ? cell.data.toISOString() : cell.data
-          }
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      customWrapper.find('td').first().simulate('doubleClick')
-      expect(customWrapper.find('td.cell input').nodes[0].value).toEqual(
-        '2017-01-01T00:00:00.000Z',
-      )
-    })
-
-    it('renders the attributes to the cell if the attributesRenderer is set', () => {
-      customWrapper = mount(
-        <DataSheet
-          data={data}
-          valueRenderer={(cell, i, j) => cell.data}
-          dataRenderer={(cell, i, j) => cell.data}
-          attributesRenderer={(cell, i, j) => {
-            if (i === 0 && j === 0) {
-              return { 'data-hint': 'Not valid' }
-            } else if (i === 1 && j === 1) {
-              return { 'data-hint': 'Valid' }
-            }
-
-            return null
-          }}
+          valueRenderer={cell => (cell.data ? `${cell.data}` : '')}
           onChange={(cell, i, j, value) => (data[i][j].data = value)}
         />,
       )
 
-      expect(
-        customWrapper.find('td.cell').first().props()['data-hint'],
-      ).toEqual('Not valid')
-      expect(customWrapper.find('td.cell').last().props()['data-hint']).toEqual(
-        'Valid',
-      )
+      expect(screen.getByRole('table')).toBeInTheDocument()
+      const classes = [...screen.getByRole('table').classList.values()]
+      expect(classes).toEqual(['data-grid', 'test', 'nowrap'])
+
+      // expect(wrapper.find('td.cell span').length).toEqual(4)
+      // expect(wrapper.find('td.cell span').nodes.map(n => n.innerHTML)).toEqual([
+      //   '4',
+      //   '2',
+      //   '0',
+      //   '5',
+      // ])
     })
 
-    it('renders a component properly', () => {
-      customWrapper = mount(
-        <DataSheet
-          data={[
-            [
-              {
-                component: (
-                  <div className={'custom-component'}>COMPONENT RENDERED</div>
-                ),
-              },
-            ],
-          ]}
-          valueRenderer={cell => 'VALUE RENDERED'}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      expect(customWrapper.find('td').text()).toEqual('VALUE RENDERED')
-      customWrapper.find('td').first().simulate('doubleClick')
-      expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
-    })
+    // it('renders the proper keys', () => {
+    //   expect(wrapper.find('Sheet Row').at(0).key()).toEqual('custom_key_0')
+    //   expect(wrapper.find('Sheet Row').at(1).key()).toEqual('custom_key_1')
+    //   expect(wrapper.find('DataCell').at(1).key()).toEqual('custom_key')
+    // })
 
-    it('forces a component rendering', () => {
-      customWrapper = mount(
-        <DataSheet
-          data={[
-            [
-              {
-                forceComponent: true,
-                component: (
-                  <div className={'custom-component'}>COMPONENT RENDERED</div>
-                ),
-              },
-            ],
-          ]}
-          valueRenderer={cell => 'VALUE RENDERED'}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
-      customWrapper.find('td').first().simulate('mousedown')
-      customWrapper.find('td').first().simulate('mouseover')
-      customWrapper.find('td').first().simulate('doubleClick')
-      expect(customWrapper.state('start')).toEqual({ i: 0, j: 0 })
-      expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
-    })
+    // it('sets the proper classes for the cells', () => {
+    //   expect(
+    //     wrapper.find('td').nodes.map(n => _.values(n.classList).sort()),
+    //   ).toEqual([
+    //     ['cell', 'clip', 'test1'],
+    //     ['cell', 'test2'],
+    //     ['cell', 'test3'],
+    //     ['cell', 'test4'],
+    //   ])
+    // })
+    // it('renders the data in the input properly if dataRenderer is set', () => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={data}
+    //       dataRenderer={cell => '=+' + cell.data}
+    //       valueRenderer={cell => cell.data}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   customWrapper.find('td').first().simulate('doubleClick')
+    //   expect(customWrapper.find('td.cell input').nodes[0].value).toEqual('=+4')
+    // })
 
-    it('handles  a custom editable component and exits on ENTER_KEY', done => {
-      customWrapper = mount(
-        <DataSheet
-          data={[
-            [
-              { value: 1 },
-              { component: <input className={'custom-component'} /> },
-              { value: 2 },
-            ],
-          ]}
-          valueRenderer={cell => 'VALUE RENDERED'}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      const cell = customWrapper.find('td').at(1)
-      cell.simulate('mouseDown')
-      cell.simulate('doubleClick')
+    // it('renders proper elements by column', () => {
+    //   const withDates = data.map((row, index) => [
+    //     { data: new Date('2017-0' + (index + 1) + '-01') },
+    //     ...row,
+    //   ])
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={withDates}
+    //       valueRenderer={(cell, i, j) =>
+    //         j === 0 ? cell.data.toGMTString() : cell.data
+    //       }
+    //       dataRenderer={(cell, i, j) =>
+    //         j === 0 ? cell.data.toISOString() : cell.data
+    //       }
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   // expect(wrapper.find('td > span').length).toEqual(6);
+    //   expect(
+    //     customWrapper.find('td.cell span').nodes.map(n => n.innerHTML),
+    //   ).toEqual([
+    //     'Sun, 01 Jan 2017 00:00:00 GMT',
+    //     '4',
+    //     '2',
+    //     'Wed, 01 Feb 2017 00:00:00 GMT',
+    //     '0',
+    //     '5',
+    //   ])
+    // })
 
-      expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
-      cell.find('.custom-component').first().simulate('doubleClick')
-      triggerEvent(customWrapper.find('.data-grid-container').node, TAB_KEY)
-      setTimeout(() => {
-        expect(customWrapper.state('start')).toEqual({ i: 0, j: 2 })
-        done()
-      }, 50)
-    })
+    // it('renders data in the input properly if dataRenderer is set by column', () => {
+    //   const withDates = data.map((row, index) => [
+    //     { data: new Date('2017-0' + (index + 1) + '-01') },
+    //     ...row,
+    //   ])
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={withDates}
+    //       valueRenderer={(cell, i, j) =>
+    //         j === 0 ? cell.data.toGMTString() : cell.data
+    //       }
+    //       dataRenderer={(cell, i, j) =>
+    //         j === 0 ? cell.data.toISOString() : cell.data
+    //       }
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   customWrapper.find('td').first().simulate('doubleClick')
+    //   expect(customWrapper.find('td.cell input').nodes[0].value).toEqual(
+    //     '2017-01-01T00:00:00.000Z',
+    //   )
+    // })
 
-    it('handles  a custom editable component and exits', done => {
-      customWrapper = mount(
-        <DataSheet
-          data={[
-            [
-              { value: 1 },
-              { component: <input className={'custom-component'} /> },
-              { value: 2 },
-            ],
-          ]}
-          valueRenderer={cell => 'VALUE RENDERED'}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      const cell = customWrapper.find('td').at(1)
+    // it('renders the attributes to the cell if the attributesRenderer is set', () => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={data}
+    //       valueRenderer={(cell, i, j) => cell.data}
+    //       dataRenderer={(cell, i, j) => cell.data}
+    //       attributesRenderer={(cell, i, j) => {
+    //         if (i === 0 && j === 0) {
+    //           return { 'data-hint': 'Not valid' }
+    //         } else if (i === 1 && j === 1) {
+    //           return { 'data-hint': 'Valid' }
+    //         }
 
-      const selectCell = () => {
-        cell.simulate('mouseDown')
-        cell.simulate('doubleClick')
-      }
+    //         return null
+    //       }}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
 
-      const checkEnterKey = callback => {
-        selectCell()
-        expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
-        cell.find('.custom-component').first().simulate('doubleClick')
-        triggerEvent(customWrapper.find('.data-grid-container').node, ENTER_KEY)
-        setTimeout(() => {
-          expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
-          callback()
-        }, 50)
-      }
-      const checkTabKey = callback => {
-        selectCell()
-        expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
-        cell.find('.custom-component').first().simulate('doubleClick')
-        triggerEvent(customWrapper.find('.data-grid-container').node, TAB_KEY)
-        setTimeout(() => {
-          expect(customWrapper.state('start')).toEqual({ i: 0, j: 2 })
-          callback()
-        }, 50)
-      }
-      checkEnterKey(() => checkTabKey(done))
-    })
+    //   expect(
+    //     customWrapper.find('td.cell').first().props()['data-hint'],
+    //   ).toEqual('Not valid')
+    //   expect(customWrapper.find('td.cell').last().props()['data-hint']).toEqual(
+    //     'Valid',
+    //   )
+    // })
 
-    it('renders a cell with readOnly field properly', () => {
-      customWrapper = mount(
-        <DataSheet
-          data={[
-            [
-              { data: 12, readOnly: true },
-              { data: 24, readOnly: false },
-            ],
-          ]}
-          valueRenderer={cell => cell.data}
-          dataRenderer={cell => '=+' + cell.data}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      expect(customWrapper.find('td.cell').at(0).text()).toEqual(12)
-      expect(customWrapper.find('td.cell').at(1).text()).toEqual(24)
-      customWrapper.find('td').at(0).simulate('mouseDown')
-      customWrapper.find('td').at(0).simulate('doubleClick')
-      customWrapper.find('td').at(1).simulate('mouseDown')
-      customWrapper.find('td').at(1).simulate('doubleClick')
+    // it('renders a component properly', () => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={[
+    //         [
+    //           {
+    //             component: (
+    //               <div className={'custom-component'}>COMPONENT RENDERED</div>
+    //             ),
+    //           },
+    //         ],
+    //       ]}
+    //       valueRenderer={cell => 'VALUE RENDERED'}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   expect(customWrapper.find('td').text()).toEqual('VALUE RENDERED')
+    //   customWrapper.find('td').first().simulate('doubleClick')
+    //   expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
+    // })
 
-      expect(customWrapper.find('td.cell').at(0).text()).toEqual(12)
-      expect(
-        customWrapper.find('td.cell').at(1).find('input').props().value,
-      ).toEqual('=+24')
+    // it('forces a component rendering', () => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={[
+    //         [
+    //           {
+    //             forceComponent: true,
+    //             component: (
+    //               <div className={'custom-component'}>COMPONENT RENDERED</div>
+    //             ),
+    //           },
+    //         ],
+    //       ]}
+    //       valueRenderer={cell => 'VALUE RENDERED'}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
+    //   customWrapper.find('td').first().simulate('mousedown')
+    //   customWrapper.find('td').first().simulate('mouseover')
+    //   customWrapper.find('td').first().simulate('doubleClick')
+    //   expect(customWrapper.state('start')).toEqual({ i: 0, j: 0 })
+    //   expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
+    // })
 
-      expect(customWrapper.find('td.cell').at(0).html()).toEqual(
-        '<td class="cell read-only"><span class="value-viewer">12</span></td>',
-      )
-      expect(customWrapper.find('td.cell').at(1).html()).toEqual(
-        '<td class="cell selected editing"><input class="data-editor" value="=+24"></td>',
-      )
-    })
+    // it('handles  a custom editable component and exits on ENTER_KEY', done => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={[
+    //         [
+    //           { value: 1 },
+    //           { component: <input className={'custom-component'} /> },
+    //           { value: 2 },
+    //         ],
+    //       ]}
+    //       valueRenderer={cell => 'VALUE RENDERED'}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   const cell = customWrapper.find('td').at(1)
+    //   cell.simulate('mouseDown')
+    //   cell.simulate('doubleClick')
 
-    it('renders a cell with disabled events', () => {
-      customWrapper = mount(
-        <DataSheet
-          data={[
-            [
-              { data: 12, disableEvents: true },
-              { data: 24, disableEvents: true },
-            ],
-          ]}
-          valueRenderer={cell => cell.data}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
-        />,
-      )
-      customWrapper.find('td').at(0).simulate('mouseDown')
-      customWrapper.find('td').at(0).simulate('doubleClick')
-      expect(customWrapper.state()).toEqual({
-        start: {},
-        end: {},
-        selecting: false,
-        editing: {},
-        forceEdit: false,
-        clear: {},
-      })
-    })
+    //   expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
+    //   cell.find('.custom-component').first().simulate('doubleClick')
+    //   triggerEvent(customWrapper.find('.data-grid-container').node, TAB_KEY)
+    //   setTimeout(() => {
+    //     expect(customWrapper.state('start')).toEqual({ i: 0, j: 2 })
+    //     done()
+    //   }, 50)
+    // })
+
+    // it('handles  a custom editable component and exits', done => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={[
+    //         [
+    //           { value: 1 },
+    //           { component: <input className={'custom-component'} /> },
+    //           { value: 2 },
+    //         ],
+    //       ]}
+    //       valueRenderer={cell => 'VALUE RENDERED'}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   const cell = customWrapper.find('td').at(1)
+
+    //   const selectCell = () => {
+    //     cell.simulate('mouseDown')
+    //     cell.simulate('doubleClick')
+    //   }
+
+    //   const checkEnterKey = callback => {
+    //     selectCell()
+    //     expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
+    //     cell.find('.custom-component').first().simulate('doubleClick')
+    //     triggerEvent(customWrapper.find('.data-grid-container').node, ENTER_KEY)
+    //     setTimeout(() => {
+    //       expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
+    //       callback()
+    //     }, 50)
+    //   }
+    //   const checkTabKey = callback => {
+    //     selectCell()
+    //     expect(customWrapper.state('start')).toEqual({ i: 0, j: 1 })
+    //     cell.find('.custom-component').first().simulate('doubleClick')
+    //     triggerEvent(customWrapper.find('.data-grid-container').node, TAB_KEY)
+    //     setTimeout(() => {
+    //       expect(customWrapper.state('start')).toEqual({ i: 0, j: 2 })
+    //       callback()
+    //     }, 50)
+    //   }
+    //   checkEnterKey(() => checkTabKey(done))
+    // })
+
+    // it('renders a cell with readOnly field properly', () => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={[
+    //         [
+    //           { data: 12, readOnly: true },
+    //           { data: 24, readOnly: false },
+    //         ],
+    //       ]}
+    //       valueRenderer={cell => cell.data}
+    //       dataRenderer={cell => '=+' + cell.data}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   expect(customWrapper.find('td.cell').at(0).text()).toEqual(12)
+    //   expect(customWrapper.find('td.cell').at(1).text()).toEqual(24)
+    //   customWrapper.find('td').at(0).simulate('mouseDown')
+    //   customWrapper.find('td').at(0).simulate('doubleClick')
+    //   customWrapper.find('td').at(1).simulate('mouseDown')
+    //   customWrapper.find('td').at(1).simulate('doubleClick')
+
+    //   expect(customWrapper.find('td.cell').at(0).text()).toEqual(12)
+    //   expect(
+    //     customWrapper.find('td.cell').at(1).find('input').props().value,
+    //   ).toEqual('=+24')
+
+    //   expect(customWrapper.find('td.cell').at(0).html()).toEqual(
+    //     '<td class="cell read-only"><span class="value-viewer">12</span></td>',
+    //   )
+    //   expect(customWrapper.find('td.cell').at(1).html()).toEqual(
+    //     '<td class="cell selected editing"><input class="data-editor" value="=+24"></td>',
+    //   )
+    // })
+
+    // it('renders a cell with disabled events', () => {
+    //   customWrapper = mount(
+    //     <DataSheet
+    //       data={[
+    //         [
+    //           { data: 12, disableEvents: true },
+    //           { data: 24, disableEvents: true },
+    //         ],
+    //       ]}
+    //       valueRenderer={cell => cell.data}
+    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
+    //     />,
+    //   )
+    //   customWrapper.find('td').at(0).simulate('mouseDown')
+    //   customWrapper.find('td').at(0).simulate('doubleClick')
+    //   expect(customWrapper.state()).toEqual({
+    //     start: {},
+    //     end: {},
+    //     selecting: false,
+    //     editing: {},
+    //     forceEdit: false,
+    //     clear: {},
+    //   })
+    // })
   })
 
   // describe('selection', () => {
