@@ -18,18 +18,24 @@ import {
   UP_KEY,
   DOWN_KEY,
 } from './keys'
-import {Cell} from './Cell'
+import { Cell } from './Cell'
 import { DataEditor } from './DataEditor'
 import ValueViewer from './ValueViewer'
 import { renderValue, renderData } from './renderHelpers'
-import { EditorProps, Renderer, CellShape, ValueViewerProps } from 'types'
+import {
+  EditorProps,
+  DataRenderer,
+  ValueRenderer,
+  CellShape,
+  ValueViewerProps,
+} from 'types'
 
 type InitialDataArgs<T> = {
   cell: CellShape<T>
   row: number
   col: number
-  valueRenderer: Renderer
-  dataRenderer: Renderer
+  valueRenderer: ValueRenderer
+  dataRenderer?: DataRenderer
 }
 
 const initialData = <T,>({
@@ -46,7 +52,7 @@ type InitialValueArgs<T> = {
   cell: CellShape<T>
   row: number
   col: number
-  valueRenderer: Renderer
+  valueRenderer: ValueRenderer
 }
 
 const initialValue = <T,>({
@@ -63,35 +69,40 @@ const widthStyle = <T,>(cell: CellShape<T>) => {
   return width ? { width } : undefined
 }
 
-type DataCellProps<T> = {
+export type DataCellProps<T> = {
   row: number
   col: number
   cell: CellShape<T>
   forceEdit?: boolean
   selected?: boolean
   editing?: boolean
-  editValue: unknown
+  editValue?: unknown
   clearing?: boolean
   cellRenderer?: ComponentType
-  valueRenderer: Renderer
-  dataRenderer: Renderer
+  valueRenderer: ValueRenderer
+  dataRenderer?: DataRenderer
   valueViewer?: ComponentType<ValueViewerProps<T>>
   dataEditor?: ComponentType<EditorProps<CellShape<T>>>
-  attributesRenderer?: (cell: CellShape<T>, row: number, col: number) => TdHTMLAttributes<HTMLTableCellElement>
+  attributesRenderer?: (
+    cell: CellShape<T>,
+    row: number,
+    col: number,
+  ) => TdHTMLAttributes<HTMLTableCellElement>
   onNavigate: (event: KeyboardEvent, b: boolean) => void
   onMouseDown: (row: number, col: number, event: MouseEvent) => void
   onMouseOver: (row: number, col: number) => void
   onDoubleClick: (row: number, col: number) => void
-  onTouchEnd: TouchEventHandler<HTMLTableCellElement>
+  onTouchEnd?: TouchEventHandler<HTMLTableCellElement>
   onContextMenu: (event: MouseEvent, row: number, col: number) => void
   onChange: (row: number, col: number, value: string) => void
-  onKeyUp: KeyboardEventHandler<HTMLInputElement>
+  onKeyUp?: KeyboardEventHandler<HTMLInputElement>
   onRevert: () => void
   onEdit?: () => void
 }
 
 const DataCell = <T,>(props: DataCellProps<T>) => {
-  const {  cell,
+  const {
+    cell,
     row,
     col,
     valueRenderer,
@@ -109,44 +120,63 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
     selected = false,
     editing = false,
     clearing = false,
-    cellRenderer:CellRenderer = Cell,
+    cellRenderer: CellRenderer = Cell,
     dataEditor,
     valueViewer,
     attributesRenderer,
   } = props
-
   const [updated, setUpdated] = useState(false)
   const [reverting, setReverting] = useState(false)
   const [committing, setCommitting] = useState(false)
   const [value, setValue] = useState('')
 
-  const prevProps = useRef<DataCellProps<T>>(props)
+  const prevProps = useRef<DataCellProps<T>>()
   const timeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
+    // console.log('EFFECT CALLED')
+    if (!prevProps.current) {
+      prevProps.current = props
+      return
+    }
+
     if (
       !cell.disableUpdatedFlag &&
       initialValue(prevProps.current) !== initialValue(props)
     ) {
       setUpdated(true)
-      timeoutRef.current = setTimeout(() => setUpdated(false), 700);
+      timeoutRef.current = setTimeout(() => setUpdated(false), 700)
     }
+    // console.log('EFFECT RUNNING')
+    // console.log('CURRENT EDITING', editing)
+    // console.log('PREV EDITING', prevProps.current.editing)
 
-    if (editing === true && prevProps.current.editing === false) {
-      const value = clearing ? '' : initialData(props);
+    if (editing === true && !prevProps.current.editing) {
+      const value = clearing ? '' : initialData(props)
+      // console.log('SETTING VALUE', value)
       setValue(value)
       setReverting(false)
     }
-  
+
+    // console.log('prevEditing', prevProps.current.editing)
+    // console.log('editing', editing)
+    // console.log('reverting', reverting)
+    // console.log('committing', committing)
+    // console.log('value', value)
+    // console.log('initialData', initialData(props))
+    // console.log('')
+
     if (
       prevProps.current.editing === true &&
-      editing === false &&
+      !editing &&
       !reverting &&
       !committing &&
       value !== initialData(props)
     ) {
-      onChange(row, col, value);
+      onChange(row, col, value)
     }
+
+    prevProps.current = props
   }, [props])
 
   useEffect(() => {
@@ -252,28 +282,36 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
     col: number,
     dataEditor?: ComponentType<EditorProps<CellShape<T>>>,
   ) => {
-    if (editing) {
-      const Editor = cell.dataEditor || dataEditor || DataEditor
-      return (
-        <Editor
-          cell={cell}
-          row={row}
-          col={col}
-          value={value}
-          onChange={handleChange}
-          onCommit={handleCommit}
-          onRevert={handleRevert}
-          onKeyDown={handleKey}
-        />
-      )
+    if (!editing) {
+      return undefined
     }
+
+    // console.log('EDITOR: cell.dataEditor', Boolean(cell.dataEditor))
+    // console.log('EDITOR: dataEditor', Boolean(dataEditor))
+    // console.log('EDITOR: DataEditor', Boolean(DataEditor))
+    // console.log('EDITOR VALUE: cell', cell)
+
+    const Editor = cell.dataEditor || dataEditor || DataEditor
+
+    return (
+      <Editor
+        cell={cell}
+        row={row}
+        col={col}
+        value={value}
+        onChange={handleChange}
+        onCommit={handleCommit}
+        onRevert={handleRevert}
+        onKeyDown={handleKey}
+      />
+    )
   }
 
   const renderViewer = <T,>(
     cell: CellShape<T>,
     row: number,
     col: number,
-    valueRenderer: Renderer,
+    valueRenderer: ValueRenderer,
     valueViewer?: ComponentType<ValueViewerProps<T>>,
   ) => {
     const Viewer = cell.valueViewer || valueViewer || ValueViewer
@@ -281,10 +319,21 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
     return <Viewer cell={cell} row={row} col={col} value={value} />
   }
 
-  const content =
-    renderComponent(editing, cell) ||
-    renderEditor(editing, cell, row, col, dataEditor) ||
-    renderViewer(cell, row, col, valueRenderer, valueViewer)
+  const renderedComponent = renderComponent(editing, cell)
+  const renderedEditor = renderEditor(editing, cell, row, col, dataEditor)
+  const renderedViewer = renderViewer(
+    cell,
+    row,
+    col,
+    valueRenderer,
+    valueViewer,
+  )
+
+  // console.log('renderedComponent', Boolean(renderedComponent))
+  // console.log('renderedEditor', Boolean(renderedEditor))
+  // console.log('renderedViewer', Boolean(renderedViewer))
+
+  const content = renderedComponent || renderedEditor || renderedViewer
 
   const className = [
     cell.className,

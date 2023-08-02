@@ -1,5 +1,11 @@
-import { ChangeEvent,KeyboardEvent, KeyboardEventHandler, useEffect, useRef } from 'react'
-import {CellShape} from './types'
+import {
+  ChangeEvent,
+  KeyboardEvent,
+  KeyboardEventHandler,
+  useEffect,
+  useRef,
+} from 'react'
+import { CellShape } from './types'
 
 type DataEditorProps<T> = {
   value: string
@@ -12,16 +18,23 @@ type DataEditorProps<T> = {
   onKeyDown: KeyboardEventHandler<HTMLInputElement>
 }
 
-export const DataEditor = <T,>({value, onChange, onKeyDown, ...rest }:DataEditorProps<T>) => {
+export const DataEditor = <T,>({
+  value,
+  onChange,
+  onKeyDown,
+  ...rest
+}: DataEditorProps<T>) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  const handleChange = (event:ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value)
   }
+
+  // console.log('DataEditor value', value)
 
   return (
     <input
@@ -33,5 +46,3 @@ export const DataEditor = <T,>({value, onChange, onKeyDown, ...rest }:DataEditor
     />
   )
 }
-
-

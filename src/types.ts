@@ -1,10 +1,16 @@
 import { FC, KeyboardEventHandler, KeyboardEvent, ReactNode } from 'react'
 
-export type Renderer = <T>(
-  cell: T,
+export type DataRenderer = <T>(
+  cell: CellShape<T>,
   row: number,
   col: number,
-) => string | number | null | void
+) => T | undefined
+
+export type ValueRenderer = <T>(
+  cell: CellShape<T>,
+  row: number,
+  col: number,
+) => string | undefined
 
 export type EditorProps<T> = {
   /** The result of the dataRenderer (or valueRenderer if none) */
@@ -39,6 +45,8 @@ export type CellShape<T> = {
   overflow?: 'wrap' | 'nowrap' | 'clip'
   dataEditor?: FC<EditorProps<CellShape<T>>>
   valueViewer?: FC
+  value?: string
+  data?: T
 }
 
 export type ValueViewerProps<T> = {

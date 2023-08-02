@@ -12,9 +12,9 @@ type CellProps<T> = {
   onMouseDown: MouseEventHandler<HTMLTableCellElement>
   onMouseOver: MouseEventHandler<HTMLTableCellElement>
   onDoubleClick: MouseEventHandler<HTMLTableCellElement>
-  onTouchEnd: TouchEventHandler<HTMLTableCellElement>
+  onTouchEnd?: TouchEventHandler<HTMLTableCellElement>
   onContextMenu: MouseEventHandler<HTMLTableCellElement>
-  onKeyUp: KeyboardEventHandler<HTMLInputElement>
+  onKeyUp?: KeyboardEventHandler<HTMLInputElement>
   className?: string
   style?: CSSProperties
   children?: ReactNode
