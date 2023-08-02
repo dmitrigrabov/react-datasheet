@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   render,
   screen,
@@ -308,6 +308,239 @@ describe('DataCell', () => {
       )
 
       expect(props.onChange).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('DataCell with component', () => {
+    describe('rendering', () => {
+      it('should properly render', () => {
+        const onMouseDown = vi.fn()
+        const onMouseOver = vi.fn()
+        const onDoubleClick = vi.fn()
+        const onContextMenu = vi.fn()
+        const onNavigate = vi.fn()
+        const onChange = vi.fn()
+        const onRevert = vi.fn()
+        const cell = {
+          foo: 'bar',
+          readOnly: false,
+          forceComponent: true,
+          rowSpan: 4,
+          colSpan: 5,
+          value: '5',
+          width: '200px',
+          className: 'test',
+          component: <div>HELLO</div>,
+        }
+        const result = render(
+          <DataCell
+            row={2}
+            col={3}
+            cell={cell}
+            editing={false}
+            selected={false}
+            onMouseDown={onMouseDown}
+            onDoubleClick={onDoubleClick}
+            onMouseOver={onMouseOver}
+            onContextMenu={onContextMenu}
+            onNavigate={onNavigate}
+            onChange={onChange}
+            onRevert={onRevert}
+            valueRenderer={cell => cell.value}
+          />,
+          { container: getRowContainer() },
+        )
+
+        expect(result.container).toMatchInlineSnapshot(`
+          <tr>
+            <td
+              class="test cell"
+              colspan="5"
+              rowspan="4"
+              style="width: 200px;"
+            >
+              <div>
+                HELLO
+              </div>
+            </td>
+          </tr>
+        `)
+
+        result.rerender(
+          <DataCell
+            row={2}
+            col={3}
+            cell={{ ...cell, forceComponent: false }}
+            editing={false}
+            selected={false}
+            onMouseDown={onMouseDown}
+            onDoubleClick={onDoubleClick}
+            onMouseOver={onMouseOver}
+            onContextMenu={onContextMenu}
+            onNavigate={onNavigate}
+            onChange={onChange}
+            onRevert={onRevert}
+            valueRenderer={cell => cell.value}
+          />,
+        )
+
+        expect(result.container).toMatchInlineSnapshot(`
+          <tr>
+            <td
+              class="test cell"
+              colspan="5"
+              rowspan="4"
+              style="width: 200px;"
+            >
+              <span
+                class="value-viewer"
+              >
+                5
+              </span>
+            </td>
+          </tr>
+        `)
+
+        result.rerender(
+          <DataCell
+            row={2}
+            col={3}
+            cell={{ ...cell, forceComponent: false, value: '7' }}
+            editing={false}
+            selected={false}
+            onMouseDown={onMouseDown}
+            onDoubleClick={onDoubleClick}
+            onMouseOver={onMouseOver}
+            onContextMenu={onContextMenu}
+            onNavigate={onNavigate}
+            onChange={onChange}
+            onRevert={onRevert}
+            valueRenderer={cell => cell.value}
+          />,
+        )
+
+        expect(result.container).toMatchInlineSnapshot(`
+          <tr>
+            <td
+              class="test cell updated"
+              colspan="5"
+              rowspan="4"
+              style="width: 200px;"
+            >
+              <span
+                class="value-viewer"
+              >
+                7
+              </span>
+            </td>
+          </tr>
+        `)
+
+        const cellElement = screen.getByRole('cell')
+
+        fireEvent.mouseDown(cellElement)
+        expect(onMouseDown).toHaveBeenCalledWith(
+          2,
+          3,
+          expect.objectContaining({ type: 'mousedown' }),
+        )
+
+        fireEvent.doubleClick(cellElement)
+        expect(onDoubleClick).toHaveBeenCalledWith(2, 3)
+
+        fireEvent.mouseOver(cellElement)
+        expect(onMouseOver).toHaveBeenCalledWith(2, 3)
+
+        fireEvent.contextMenu(cellElement)
+        expect(onContextMenu).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'contextmenu' }),
+          2,
+          3,
+        )
+      })
+    })
+
+    describe('rendering', () => {
+      beforeEach(() => {
+        vi.useFakeTimers()
+      })
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+      })
+
+      it('should properly render a change (flashing)', () => {
+        const cell = {
+          readOnly: false,
+          forceComponent: true,
+          value: '5',
+          className: 'test',
+          component: <div>HELLO</div>,
+        }
+
+        const result = render(
+          <DataCell
+            row={2}
+            col={3}
+            cell={cell}
+            editing={false}
+            selected={false}
+            onMouseDown={() => {}}
+            onDoubleClick={() => {}}
+            onMouseOver={() => {}}
+            onContextMenu={() => {}}
+            onNavigate={() => {}}
+            onChange={() => {}}
+            onRevert={() => {}}
+            valueRenderer={cell => cell.value}
+          />,
+          { container: getRowContainer() },
+        )
+
+        result.rerender(
+          <DataCell
+            row={2}
+            col={3}
+            cell={{ ...cell, value: '7' }}
+            editing={false}
+            selected={false}
+            onMouseDown={() => {}}
+            onDoubleClick={() => {}}
+            onMouseOver={() => {}}
+            onContextMenu={() => {}}
+            onNavigate={() => {}}
+            onChange={() => {}}
+            onRevert={() => {}}
+            valueRenderer={cell => cell.value}
+          />,
+        )
+
+        expect(result.container).toMatchInlineSnapshot(`
+          <tr>
+            <td
+              class="test cell updated"
+            >
+              <div>
+                HELLO
+              </div>
+            </td>
+          </tr>
+        `)
+
+        vi.runAllTimers()
+
+        expect(result.container).toMatchInlineSnapshot(`
+          <tr>
+            <td
+              class="test cell updated"
+            >
+              <div>
+                HELLO
+              </div>
+            </td>
+          </tr>
+        `)
+      })
     })
   })
 })
