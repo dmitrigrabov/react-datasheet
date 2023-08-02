@@ -1,5 +1,12 @@
 import { CellShape } from 'types'
-import { CSSProperties, KeyboardEventHandler, MouseEventHandler, ReactNode, TdHTMLAttributes, TouchEventHandler } from 'react'
+import {
+  CSSProperties,
+  KeyboardEventHandler,
+  MouseEventHandler,
+  ReactNode,
+  TdHTMLAttributes,
+  TouchEventHandler,
+} from 'react'
 
 type CellProps<T> = {
   row: number
@@ -8,7 +15,11 @@ type CellProps<T> = {
   selected?: boolean
   editing?: boolean
   updated?: boolean
-  attributesRenderer?: (cell: CellShape<T>, row: number, col: number) => TdHTMLAttributes<HTMLTableCellElement>
+  attributesRenderer?: (
+    cell: CellShape<T>,
+    row: number,
+    col: number,
+  ) => TdHTMLAttributes<HTMLTableCellElement>
   onMouseDown: MouseEventHandler<HTMLTableCellElement>
   onMouseOver: MouseEventHandler<HTMLTableCellElement>
   onDoubleClick: MouseEventHandler<HTMLTableCellElement>
@@ -20,7 +31,7 @@ type CellProps<T> = {
   children?: ReactNode
 }
 
-export const Cell = <T,>(props:CellProps<T>) => {
+export const Cell = <T,>(props: CellProps<T>) => {
   const {
     row,
     col,
@@ -33,9 +44,8 @@ export const Cell = <T,>(props:CellProps<T>) => {
     onTouchEnd,
     onContextMenu,
     style,
-    children
+    children,
   } = props
-
 
   const { colSpan, rowSpan } = cell
   const attributes = attributesRenderer
@@ -58,6 +68,4 @@ export const Cell = <T,>(props:CellProps<T>) => {
       {children}
     </td>
   )
-  
 }
-

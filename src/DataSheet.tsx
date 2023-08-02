@@ -1,5 +1,5 @@
-import Sheet from './Sheet'
-import Row from './Row'
+import { Sheet } from './Sheet'
+import { Row } from './Row'
 import { Cell } from './Cell'
 import DataCell from './DataCell'
 import { DataEditor } from './DataEditor'
@@ -15,14 +15,32 @@ import {
   DOWN_KEY,
   RIGHT_KEY,
 } from './keys'
-import { CellRenderer, CellShape, DataRenderer, EditorProps, RowRenderer, SheetRenderer, ValueRenderer, ValueViewerProps } from 'types'
-import { ComponentType, MouseEvent, TdHTMLAttributes, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  CellRendererType,
+  CellShape,
+  DataRenderer,
+  EditorProps,
+  HandleCopyFunction,
+  IJ,
+  RowRenderer,
+  SheetRenderer,
+  ValueRenderer,
+  ValueViewerProps,
+} from 'types'
+import {
+  UIEvent,
+  KeyboardEvent,
+  ComponentType,
+  MouseEvent,
+  TdHTMLAttributes,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  KeyboardEventHandler,
+} from 'react'
 
-const isEmpty = (obj: Record<string, unknown> | undefined) => {
-  return typeof obj !== 'undefined' && Object.keys(obj).length === 0
-}
-
-const range = (start:number, end: number) => {
+const range = (start: number, end: number) => {
   const array = []
   const inc = end - start > 0
   for (let i = start; inc ? i <= end : i >= end; inc ? i++ : i--) {
@@ -31,13 +49,8 @@ const range = (start:number, end: number) => {
   return array
 }
 
-const defaultParsePaste = (str:string) => {
+const defaultParsePaste = <T,>(str: string): string[][] => {
   return str.split(/\r\n|\n|\r/).map(row => row.split('\t'))
-}
-
-type IJ = {
-  i: number
-  j: number
 }
 
 type CellSelection = {
@@ -45,81 +58,57 @@ type CellSelection = {
   end: IJ
 }
 
+type SelectedCell<T> = {
+  row: number
+  /** The current column index */
+  col: number
+  /** The cell's raw data structure */
+  cell?: CellShape<T>
+  value?: string
+}
+
+type RowPasteData<T> = {
+  cell: CellShape<T>
+  data: string
+}
+
 type DataSheetProps<T> = {
   data: CellShape<T>[][]
   className?: string
   disablePageClick?: boolean
   overflow?: 'wrap' | 'nowrap' | 'clip'
-  onChange?: (data: unknown[][]) => void
-  onCellsChanged?: (changes: CellShape<T>[][], additions?:CellShape<T>[][]) => void
-  onContextMenu?: (e: MouseEvent, cell: CellShape<T>, i:number, j:number) => void
-  onSelect?: (selection: unknown) => void
+  onChange?: (cell: CellShape<T>, i: number, j: number, value: string) => void
+  onCellsChanged?: (
+    changes: SelectedCell<T>[],
+    additions?: SelectedCell<T>[],
+  ) => void
+  onContextMenu?: (
+    e: MouseEvent,
+    cell: CellShape<T>,
+    i: number,
+    j: number,
+  ) => void
+  onSelect?: (selection: CellSelection | undefined) => void
   isCellNavigable?: (cell: CellShape<T>, i: number, j: number) => boolean
-  selected?: CellSelection
-  valueRenderer: ValueRenderer
-  dataRenderer?: DataRenderer
+  selected?: CellSelection | undefined
+  valueRenderer: ValueRenderer<T>
+  dataRenderer?: DataRenderer<T>
   sheetRenderer: SheetRenderer<T>
   rowRenderer: RowRenderer<T>
-  cellRenderer: CellRenderer<T>
+  cellRenderer: CellRendererType<T>
   valueViewer?: ComponentType<ValueViewerProps<T>>
   dataEditor?: ComponentType<EditorProps<CellShape<T>>>
-  parsePaste?: (str: string) => unknown[][]
+  parsePaste?: (str: string) => string[][]
   attributesRenderer?: (
     cell: CellShape<T>,
     row: number,
     col: number,
   ) => TdHTMLAttributes<HTMLTableCellElement>
   keyFn?: (row: number, col?: number) => string
-  handleCopy?: (data: unknown[][]) => void
-  editModeChanged?: (row: number, col: number, value: boolean) => void
-  onPaste?: (changes: unknown[][]) => void
+  handleCopy?: HandleCopyFunction<T>
+  editModeChanged?: (inEditMode: boolean) => void
+  onPaste?: (changes: RowPasteData<T>[][]) => void
 }
-
-
-
-// DataSheet.defaultProps = {
-//   sheetRenderer: Sheet,
-//   rowRenderer: Row,
-//   cellRenderer: Cell,
-//   valueViewer: ValueViewer,
-//   dataEditor: DataEditor,
-// }
-
-// constructor(props) {
-//   super(props)
-//   this.onMouseDown = this.onMouseDown.bind(this)
-//   this.onMouseUp = this.onMouseUp.bind(this)
-//   this.onMouseOver = this.onMouseOver.bind(this)
-//   this.onDoubleClick = this.onDoubleClick.bind(this)
-//   this.onContextMenu = this.onContextMenu.bind(this)
-//   this.handleNavigate = this.handleNavigate.bind(this)
-//   this.handleKey = this.handleKey.bind(this).bind(this)
-//   this.handleCut = this.handleCut.bind(this)
-//   this.handleCopy = this.handleCopy.bind(this)
-//   this.handlePaste = this.handlePaste.bind(this)
-//   this.pageClick = this.pageClick.bind(this)
-//   this.onChange = this.onChange.bind(this)
-//   this.onRevert = this.onRevert.bind(this)
-//   this.isSelected = this.isSelected.bind(this)
-//   this.isEditing = this.isEditing.bind(this)
-//   this.isClearing = this.isClearing.bind(this)
-//   this.handleComponentKey = this.handleComponentKey.bind(this)
-
-//   this.handleKeyboardCellMovement = this.handleKeyboardCellMovement.bind(this)
-
-//   this.defaultState = {
-//     start: {},
-//     end: {},
-//     selecting: false,
-//     forceEdit: false,
-//     editing: {},
-//     clear: {},
-//   }
-//   this.state = this.defaultState
-
-//   this.removeAllListeners = this.removeAllListeners.bind(this)
-//   this.handleIEClipboardEvents = this.handleIEClipboardEvents.bind(this)
-// }
 
 type DataSheetState = {
   start: IJ | undefined
@@ -127,7 +116,7 @@ type DataSheetState = {
   selecting: boolean
   forceEdit: boolean
   editing: IJ | undefined
-  clear: Record<string, unknown> | undefined
+  clear: IJ | undefined
 }
 
 const defaultState: DataSheetState = {
@@ -139,7 +128,7 @@ const defaultState: DataSheetState = {
   clear: undefined,
 }
 
-export const DataSheet = <T,>(props:DataSheetProps<T>) => {
+export const DataSheet = <T,>(props: DataSheetProps<T>) => {
   const [start, setStart] = useState<IJ>()
   const [end, setEnd] = useState<IJ>()
   const [selecting, setSelecting] = useState(false)
@@ -147,9 +136,18 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
   const [editing, setEditing] = useState<IJ>()
   const [clear, setClear] = useState<Record<string, unknown>>()
 
-  const {selected, editModeChanged, disablePageClick,
-    dataRenderer, valueRenderer, data, parsePaste,
-    onCellsChanged, onPaste, isCellNavigable
+  const {
+    selected,
+    editModeChanged,
+    disablePageClick,
+    dataRenderer,
+    valueRenderer,
+    data,
+    parsePaste,
+    onCellsChanged,
+    onPaste,
+    isCellNavigable,
+    onSelect,
   } = props
 
   const removeAllListeners = () => {
@@ -162,17 +160,16 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
   }
 
   const parentRef = useRef<HTMLDivElement>(null)
+  const prevEndRef = useRef<IJ>()
 
   // Add listener scoped to the DataSheet that catches otherwise unhandled
   // keyboard events when displaying components
-  useEffect(() => {  
-    parent &&
-    parent.addEventListener('keydown', handleComponentKey)
+  useEffect(() => {
+    parentRef.current?.addEventListener('keydown', handleComponentKey)
 
     return () => {
-      parent &&
-      parent.removeEventListener('keydown', handleComponentKey)
-    removeAllListeners()
+      parentRef.current?.removeEventListener('keydown', handleComponentKey)
+      removeAllListeners()
     }
   }, [])
 
@@ -187,7 +184,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
       editing,
       clear,
     }
-    
+
     if (isSelectionControlled()) {
       const { start, end } = selected || {}
       // start = start || this.defaultState.start
@@ -209,17 +206,16 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
 
     if (isSelectionControlled() && ('start' in state || 'end' in state)) {
       let { start, end, ...rest } = state
-      let { selected, onSelect } = props
-    
+
       if (!start) {
         start = selected && 'start' in selected ? selected.start : undefined
       }
-      
+
       if (!end) {
         end = selected && 'end' in selected ? selected.end : undefined
       }
 
-      onSelect && onSelect({ start, end })
+      onSelect && onSelect(start && end ? { start, end } : undefined)
       setSelecting(rest.selecting ?? false)
       setForceEdit(rest.forceEdit ?? false)
       setEditing(rest.editing)
@@ -234,14 +230,14 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }
 
-  const pageClick = useCallback( (e) => {
+  const pageClick: EventListener = useCallback(e => {
     if (disablePageClick) {
       return
     }
 
     const element = parentRef.current
-    
-    if (!element.contains(e.target)) {
+
+    if (!(e.target instanceof HTMLElement) || !element?.contains(e.target)) {
       setStart(defaultState.start)
       setEnd(defaultState.end)
       setSelecting(defaultState.selecting)
@@ -253,43 +249,49 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }, [])
 
-  const handleCut = useCallback((e) => {
+  const handleCut = useCallback((event: Event) => {
     if (!editing) {
-      e.preventDefault()
-      
-      handleCopy(e)
-      const { start, end } = getState()
-      clearSelectedCells(start, end)
-    }
-  }, [])
+      event.preventDefault()
 
-  const handleIEClipboardEvents = useCallback( (e) => {
-    if (e.ctrlKey) {
-      if (e.keyCode === 67) {
-        // C - copy
-        handleCopy(e)
-      } else if (e.keyCode === 88) {
-        // X - cut
-        handleCut(e)
-      } else if (e.keyCode === 86 || e.which === 86) {
-        // P - patse
-        handlePaste(e)
+      handleCopy(event)
+      const { start, end } = getState()
+      if (start && end) {
+        clearSelectedCells(start, end)
       }
     }
   }, [])
 
-  const handleCopy = useCallback((e) => {
+  const handleIEClipboardEvents = useCallback((event: Event) => {
+    if (event instanceof KeyboardEvent && event.ctrlKey) {
+      if (event.keyCode === 67) {
+        // C - copy
+        handleCopy(event)
+      } else if (event.keyCode === 88) {
+        // X - cut
+        handleCut(event)
+      } else if (event.keyCode === 86 || event.which === 86) {
+        // P - patse
+        handlePaste(event)
+      }
+    }
+  }, [])
+
+  const handleCopy = useCallback((event: Event) => {
     if (!editing) {
       return
     }
 
-    e.preventDefault()
+    event.preventDefault()
 
     const { start, end } = getState()
 
-    if( props.handleCopy) {
-      props.handleCopy({
-        event: e,
+    if (!start || !end) {
+      return
+    }
+
+    if (props.handleCopy) {
+      return props.handleCopy({
+        event,
         dataRenderer,
         valueRenderer,
         data,
@@ -297,10 +299,9 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
         end,
         range,
       })
-      return 
     }
 
-    const text = start && end ? range(start.i, end.i)
+    const text = range(start.i, end.i)
       .map(i =>
         range(start.j, end.j)
           .map(j => {
@@ -317,49 +318,66 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
           })
           .join('\t'),
       )
-      .join('\n') : ''
-
+      .join('\n')
 
     if (window.clipboardData && window.clipboardData.setData) {
       window.clipboardData.setData('Text', text)
-    } else {
-      e.clipboardData.setData('text/plain', text)
+    } else if (event instanceof ClipboardEvent && event.clipboardData) {
+      event.clipboardData.setData('text/plain', text)
     }
   }, [])
 
-  const handlePaste = useCallback((e) => {
+  const handlePaste = useCallback((event: Event) => {
     if (editing) {
       return
     }
 
     const { start: initialStart, end: initialEnd } = getState()
 
-    const start = initialStart && initialEnd ? { i: Math.min(initialStart.i, initialEnd.i), j: Math.min(initialStart.j, initialEnd.j) } : undefined
-    const end = initialStart && initialEnd ? { i: Math.max(initialStart.i, initialEnd.i), j: Math.max(initialStart.j, initialEnd.j) }  : undefined
+    if (!initialStart || !initialEnd) {
+      return
+    }
+
+    const start = {
+      i: Math.min(initialStart.i, initialEnd.i),
+      j: Math.min(initialStart.j, initialEnd.j),
+    }
+
+    const end = {
+      i: Math.max(initialStart.i, initialEnd.i),
+      j: Math.max(initialStart.j, initialEnd.j),
+    }
 
     const parse = parsePaste || defaultParsePaste
 
-    const changes:CellShape<T>[][] = []
-    let pasteData:T[][] = [] 
+    const changes: SelectedCell<T>[] = []
+    let pasteData: string[][] = []
     if (window.clipboardData && window.clipboardData.getData) {
       // IE
       pasteData = parse(window.clipboardData.getData('Text'))
-    } else if (e.clipboardData && e.clipboardData.getData) {
-      pasteData = parse(e.clipboardData.getData('text/plain'))
+    } else if (
+      event instanceof ClipboardEvent &&
+      event.clipboardData &&
+      event.clipboardData.getData
+    ) {
+      pasteData = parse(event.clipboardData.getData('text/plain'))
     }
 
     // in order of preference
     // const { data, onCellsChanged, onPaste, onChange } = this.props
+
+    let tempEnd: IJ | undefined
+
     if (onCellsChanged) {
-      const additions:CellShape<T>[][] = []
+      const additions: SelectedCell<T>[] = []
       pasteData.forEach((row, i) => {
         row.forEach((value, j) => {
-          end = { i: start.i + i, j: start.j + j }
-          const cell = data[end.i] && data[end.i][end.j]
+          tempEnd = { i: start.i + i, j: start.j + j } as IJ
+          const cell = data[tempEnd.i] && data[tempEnd.i][tempEnd.j]
           if (!cell) {
-            additions.push({ row: end.i, col: end.j, value })
+            additions.push({ row: tempEnd.i, col: tempEnd.j, value })
           } else if (!cell.readOnly) {
-            changes.push({ cell, row: end.i, col: end.j, value })
+            changes.push({ cell, row: tempEnd.i, col: tempEnd.j, value })
           }
         })
       })
@@ -370,35 +388,42 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
         onCellsChanged(changes)
       }
     } else if (onPaste) {
+      const pasteChanges: RowPasteData<T>[][] = []
       pasteData.forEach((row, i) => {
-        const rowData:CellShape<T>[] = []
+        const rowData: RowPasteData<T>[] = []
         row.forEach((pastedData, j) => {
-          end = { i: start.i + i, j: start.j + j }
-          const cell = data[end.i] && data[end.i][end.j]
+          tempEnd = { i: start.i + i, j: start.j + j } as IJ
+          const cell = data[tempEnd.i] && data[tempEnd.i][tempEnd.j]
           rowData.push({ cell: cell, data: pastedData })
         })
-        changes.push(rowData)
+        pasteChanges.push(rowData)
       })
-      onPaste(changes)
+      onPaste(pasteChanges)
     } else if (props.onChange) {
       pasteData.forEach((row, i) => {
         row.forEach((value, j) => {
-          end = { i: start.i + i, j: start.j + j }
-          const cell = data[end.i] && data[end.i][end.j]
+          tempEnd = { i: start.i + i, j: start.j + j } as IJ
+          const cell = data[tempEnd.i] && data[tempEnd.i][tempEnd.j]
           if (cell && !cell.readOnly) {
-            props.onChange(cell, end.i, end.j, value)
+            props.onChange?.(cell, tempEnd.i, tempEnd.j, value)
           }
         })
       })
     }
-    _setState({ end })
-    
-  },  [])
+    _setState({ end: tempEnd })
+  }, [])
 
-  const handleKeyboardCellMovement = (e, commit = false) => {
+  const handleKeyboardCellMovement = (e: KeyboardEvent, commit = false) => {
+    if (!(e instanceof KeyboardEvent)) {
+      return
+    }
+
     const { start, editing } = getState()
+    if (!start || !editing) {
+      return
+    }
 
-    const isEditing = editing && !isEmpty(editing)
+    const isEditing = Boolean(editing)
     const currentCell = data[start.i] && data[start.i][start.j]
 
     if (isEditing && !commit) {
@@ -428,14 +453,17 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }
 
-  const handleKey = (e) => {
+  const handleKey: KeyboardEventHandler<HTMLSpanElement> = e => {
     if (e.isPropagationStopped && e.isPropagationStopped()) {
       return
     }
+
     const keyCode = e.which || e.keyCode
     const { start, end, editing } = getState()
     const isEditing = Boolean(editing)
-    const noCellsSelected = !start || isEmpty(start)
+
+    const noCellsSelected = !start || !end // <-- added !end check. could be wrong
+
     const ctrlKeyPressed = e.ctrlKey || e.metaKey
     const deleteKeysPressed =
       keyCode === DELETE_KEY || keyCode === BACKSPACE_KEY
@@ -452,7 +480,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
       ].indexOf(keyCode) > -1
 
     if (noCellsSelected || ctrlKeyPressed) {
-      return true
+      return
     }
 
     if (!isEditing) {
@@ -462,7 +490,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
         clearSelectedCells(start, end)
       } else if (currentCell && !currentCell.readOnly) {
         if (enterKeyPressed) {
-          _setState({ editing: start, clear: {}, forceEdit: true })
+          _setState({ editing: start, clear: undefined, forceEdit: true })
           e.preventDefault()
         } else if (
           numbersPressed ||
@@ -478,13 +506,13 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }
 
-  const getSelectedCells = (cellData, start, end) => {
-    const selected = []
-    
+  const getSelectedCells = (dataArg: CellShape<T>[][], start: IJ, end: IJ) => {
+    const selected: SelectedCell<T>[] = []
+
     range(start.i, end.i).map(row => {
       range(start.j, end.j).map(col => {
-        if (cellData[row] && cellData[row][col]) {
-          selected.push({ cell: cellData[row][col], row, col })
+        if (dataArg[row] && dataArg[row][col]) {
+          selected.push({ cell: dataArg[row][col], row, col })
         }
       })
     })
@@ -492,11 +520,11 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     return selected
   }
 
-  const clearSelectedCells = (start:IJ, end:IJ) => {
-    // const { data, onCellsChanged, onChange } = this.props
+  const clearSelectedCells = (start: IJ, end: IJ) => {
     const cells = getSelectedCells(data, start, end)
-      .filter(cell => !cell.cell.readOnly)
+      .filter(cell => !cell.cell?.readOnly)
       .map(cell => ({ ...cell, value: '' }))
+
     if (onCellsChanged) {
       onCellsChanged(cells)
       onRevert()
@@ -505,14 +533,14 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
       // setState in a loop is unreliable
       setTimeout(() => {
         cells.forEach(({ cell, row, col, value }) => {
-          props.onChange(cell, row, col, value)
+          cell && props.onChange?.(cell, row, col, value)
         })
-        props.onRevert()
+        onRevert()
       }, 0)
     }
   }
 
-  const updateLocationSingleCell = (location:IJ | undefined) => {
+  const updateLocationSingleCell = (location: IJ | undefined) => {
     _setState({
       start: location,
       end: location,
@@ -520,8 +548,12 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     })
   }
 
-  const updateLocationMultipleCells = (offsets:IJ) => {
+  const updateLocationMultipleCells = (offsets: IJ) => {
     const { start, end } = getState()
+
+    if (!start || !end) {
+      return
+    }
 
     const oldStartLocation = { i: start.i, j: start.j }
     const newEndLocation = {
@@ -535,17 +567,23 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     })
   }
 
-  const searchForNextSelectablePos = (isCellNavigable:(cell: CellShape<T>, i: number, j: number) => boolean, dataArg:CellShape<T>[][], start:IJ, offsets:IJ, jumpRow?: boolean):IJ|null => {
-    const previousRow = (location:IJ) => ({
+  const searchForNextSelectablePos = (
+    isCellNavigable: (cell: CellShape<T>, i: number, j: number) => boolean,
+    dataArg: CellShape<T>[][],
+    start: IJ,
+    offsets: IJ,
+    jumpRow?: boolean,
+  ): IJ | null => {
+    const previousRow = (location: IJ) => ({
       i: location.i - 1,
       j: dataArg[0].length - 1,
     })
-    const nextRow = (location:IJ) => ({ i: location.i + 1, j: 0 })
-    const advanceOffset = (location:IJ) => ({
+    const nextRow = (location: IJ) => ({ i: location.i + 1, j: 0 })
+    const advanceOffset = (location: IJ) => ({
       i: location.i + offsets.i,
       j: location.j + offsets.j,
     })
-    const isCellDefined = ({ i, j }:IJ) =>
+    const isCellDefined = ({ i, j }: IJ) =>
       dataArg[i] && typeof dataArg[i][j] !== 'undefined'
 
     let newLocation = advanceOffset(start)
@@ -594,13 +632,19 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }
 
-  const handleNavigate = (e, offsets:IJ, jumpRow?: boolean) => {
+  const handleNavigate = (e: Event, offsets: IJ, jumpRow?: boolean) => {
+    if (!(e instanceof KeyboardEvent)) {
+      return
+    }
+
     if (offsets && (offsets.i || offsets.j)) {
-    
       const { start } = getState()
 
+      if (!start) {
+        return
+      }
+
       const multiSelect = e.shiftKey && !jumpRow
-  
 
       if (multiSelect) {
         updateLocationMultipleCells(offsets)
@@ -612,7 +656,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
           offsets,
           jumpRow,
         )
-        
+
         if (newLocation) {
           updateLocationSingleCell(newLocation)
         }
@@ -621,13 +665,15 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }
 
-  const handleComponentKey = (e) => {
+  const handleComponentKey = (e: Event) => {
+    if (!(e instanceof KeyboardEvent)) {
+      return
+    }
     // handles keyboard events when editing components
     const keyCode = e.which || e.keyCode
     if (![ENTER_KEY, ESCAPE_KEY, TAB_KEY].includes(keyCode)) {
       return
     }
-
 
     if (Boolean(editing)) {
       const currentCell = editing ? data[editing.i][editing.j] : undefined
@@ -643,29 +689,30 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
         // setTimeout makes sure that component is done handling the event before we take over
         setTimeout(() => {
           func()
-          parent && parent.focus({ preventScroll: true })
+          parentRef.current?.focus({ preventScroll: true })
         }, 1)
       }
     }
   }
 
-  const onContextMenu = (evt:MouseEvent, i:number, j:number) => {
+  const onContextMenu = (evt: MouseEvent, i: number, j: number) => {
     let cell = data[i][j]
     if (props.onContextMenu) {
       props.onContextMenu(evt, cell, i, j)
     }
   }
 
-  const onDoubleClick = (i:number, j:number) => {
+  const onDoubleClick = (i: number, j: number) => {
     let cell = data[i][j]
     if (!cell.readOnly) {
-      _setState({ editing: { i: i, j: j }, forceEdit: true, clear: {} })
+      _setState({ editing: { i: i, j: j }, forceEdit: true, clear: undefined })
     }
   }
 
-  const onMouseDown = (i:number, j:number, e:MouseEvent) => {
+  const onMouseDown = (i: number, j: number, e: MouseEvent) => {
     const isNowEditingSameCell = editing && editing.i === i && editing.j === j
-    let updatedEditing = !editing || editing.i !== i || editing.j !== j ? undefined : editing
+    let updatedEditing =
+      !editing || editing.i !== i || editing.j !== j ? undefined : editing
 
     _setState({
       selecting: !isNowEditingSameCell,
@@ -693,7 +740,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     document.addEventListener('paste', handlePaste)
   }
 
-  const onMouseOver = (i:number, j: number) => {
+  const onMouseOver = (i: number, j: number) => {
     if (selecting && !editing) {
       _setState({ end: { i, j } })
     }
@@ -704,7 +751,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     document.removeEventListener('mouseup', onMouseUp)
   }, [])
 
-  const onChange = (row:number, col:number, value:string) => {
+  const onChange = (row: number, col: number, value: string) => {
     // const { onChange, onCellsChanged, data } = this.props
     if (onCellsChanged) {
       onCellsChanged([{ cell: data[row][col], row, col, value }])
@@ -718,28 +765,34 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     _setState({ editing: undefined })
     // setTimeout makes sure that component is done handling the new state before we take over
     setTimeout(() => {
-      parent && parent.focus({ preventScroll: true })
+      parentRef.current?.focus({ preventScroll: true })
     }, 1)
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    let { start, end } = this.state
-    let prevEnd = prevState.end
+  useEffect(() => {
     if (
-      !isEmpty(end) &&
-      !(end.i === prevEnd.i && end.j === prevEnd.j) &&
-      !this.isSelectionControlled()
+      start && // this may be incorrect
+      onSelect &&
+      end &&
+      !(end.i === prevEndRef.current?.i && end.j === prevEndRef.current?.j) &&
+      !isSelectionControlled()
     ) {
-      this.props.onSelect && this.props.onSelect({ start, end })
+      onSelect({ start, end })
     }
-  }
+
+    prevEndRef.current = end
+  }, [])
 
   const isSelectedRow = (rowIndex: number) => {
     const { start, end } = getState()
 
+    if (!start || !end) {
+      return false
+    }
+
     const startY = start.i
     const endY = end.i
-    
+
     if (startY <= endY) {
       return rowIndex >= startY && rowIndex <= endY
     } else {
@@ -747,8 +800,12 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     }
   }
 
-  const isSelected = (i:number, j:number) => {
+  const isSelected = (i: number, j: number) => {
     const { start, end } = getState()
+
+    if (!start || !end) {
+      return false
+    }
 
     const posX = j >= start.j && j <= end.j
     const negX = j <= start.j && j >= end.j
@@ -758,21 +815,20 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     return (posX && posY) || (negX && posY) || (negX && negY) || (posX && negY)
   }
 
-  const isEditingFn = (i:number, j:number) => {
+  const isEditingFn = (i: number, j: number) => {
     return editing && editing.i === i && editing.j === j
   }
 
-  const isClearing = (i:number, j:number) => {
+  const isClearing = (i: number, j: number) => {
     return clear && clear.i === i && clear.j === j
   }
 
-
   const {
-    sheetRenderer: SheetRenderer,
-    rowRenderer: RowRenderer,
-    cellRenderer,
-    dataEditor,
-    valueViewer,
+    sheetRenderer: SheetRenderer = Sheet,
+    rowRenderer: RowRenderer = Row,
+    cellRenderer = Cell,
+    dataEditor = DataEditor,
+    valueViewer = ValueViewer,
     attributesRenderer,
     className,
     overflow,
@@ -788,9 +844,7 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     >
       <SheetRenderer
         data={data}
-        className={['data-grid', className, overflow]
-          .filter(a => a)
-          .join(' ')}
+        className={['data-grid', className, overflow].filter(a => a).join(' ')}
       >
         {data.map((row, i) => (
           <RowRenderer
@@ -835,6 +889,3 @@ export const DataSheet = <T,>(props:DataSheetProps<T>) => {
     </span>
   )
 }
-
-
-

@@ -6,15 +6,16 @@ import {
   ComponentType,
   TdHTMLAttributes,
   MouseEventHandler,
+  CSSProperties,
 } from 'react'
 
-export type DataRenderer = <T>(
+export type DataRenderer<T> = (
   cell: CellShape<T>,
   row: number,
   col: number,
 ) => T | undefined
 
-export type ValueRenderer = <T>(
+export type ValueRenderer<T> = (
   cell: CellShape<T>,
   row: number,
   col: number,
@@ -48,7 +49,7 @@ export type RowRenderer<T> = ComponentType<RowRendererProps<T>>
 
 export type EditorProps<T> = {
   /** The result of the dataRenderer (or valueRenderer if none) */
-  value: string | number | null
+  value: string
   /** The current row index */
   row: number
   /** The current column index */
@@ -76,7 +77,7 @@ export type CellRendererProps<T> = {
   /** Classes to apply to your cell element. You can add to these, but your should not overwrite or omit them unless you want to implement your own CSS also. */
   className: string
   /** Generated styles that you should apply to your cell element. This may be null or undefined. */
-  style: object | null | undefined
+  style?: CSSProperties
   /** Is the cell currently selected */
   selected: boolean
   /** Is the cell currently being edited */
@@ -98,13 +99,13 @@ export type CellRendererProps<T> = {
   /** Event handler: to launch default content-menu handling. You can safely ignore this handler if you want to provide your own content menu handling. */
   onContextMenu: MouseEventHandler<HTMLElement>
   /** Event handler: important for cell selection behavior */
-  onKeyUp: KeyboardEventHandler<HTMLElement>
+  onKeyUp?: KeyboardEventHandler
   /** The regular react props.children. You must render {props.children} within your custom renderer or you won't your cell's data. */
   children: ReactNode
 }
 
 /** A function or React Component to render each cell element. The default renders a td element. To wire it up, pass it to the cellRenderer property of the ReactDataSheet component.  */
-export type CellRenderer<T> = ComponentType<CellRendererProps<T>>
+export type CellRendererType<T> = ComponentType<CellRendererProps<T>>
 
 export type CellShape<T> = {
   readOnly?: boolean
@@ -133,4 +134,22 @@ export type ValueViewerProps<T> = {
   col: number
   /** The cell's raw data structure */
   cell: CellShape<T>
+}
+
+/* Props available for handleCopy */
+export type HandleCopyProps<T> = {
+  event: Event
+  dataRenderer?: DataRenderer<T>
+  valueRenderer: ValueRenderer<T>
+  data: CellShape<T>[][]
+  start: IJ
+  end: IJ
+  range: (start: number, end: number) => number[]
+}
+
+export type HandleCopyFunction<T> = (props: HandleCopyProps<T>) => void
+
+export type IJ = {
+  i: number
+  j: number
 }

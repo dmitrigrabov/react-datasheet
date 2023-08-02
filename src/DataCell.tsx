@@ -1,4 +1,5 @@
 import {
+  CSSProperties,
   ComponentType,
   KeyboardEvent,
   KeyboardEventHandler,
@@ -28,15 +29,15 @@ import {
   ValueRenderer,
   CellShape,
   ValueViewerProps,
-  CellRenderer,
+  CellRendererType,
 } from 'types'
 
 type InitialDataArgs<T> = {
   cell: CellShape<T>
   row: number
   col: number
-  valueRenderer: ValueRenderer
-  dataRenderer?: DataRenderer
+  valueRenderer: ValueRenderer<T>
+  dataRenderer?: DataRenderer<T>
 }
 
 const initialData = <T,>({
@@ -53,7 +54,7 @@ type InitialValueArgs<T> = {
   cell: CellShape<T>
   row: number
   col: number
-  valueRenderer: ValueRenderer
+  valueRenderer: ValueRenderer<T>
 }
 
 const initialValue = <T,>({
@@ -65,7 +66,7 @@ const initialValue = <T,>({
   return renderValue(cell, row, col, valueRenderer)
 }
 
-const widthStyle = <T,>(cell: CellShape<T>) => {
+const widthStyle = <T,>(cell: CellShape<T>): CSSProperties | undefined => {
   const width = typeof cell.width === 'number' ? cell.width + 'px' : cell.width
   return width ? { width } : undefined
 }
@@ -79,9 +80,9 @@ export type DataCellProps<T> = {
   editing?: boolean
   editValue?: unknown
   clearing?: boolean
-  cellRenderer?: CellRenderer<T>
-  valueRenderer: ValueRenderer
-  dataRenderer?: DataRenderer
+  cellRenderer?: CellRendererType<T>
+  valueRenderer: ValueRenderer<T>
+  dataRenderer?: DataRenderer<T>
   valueViewer?: ComponentType<ValueViewerProps<T>>
   dataEditor?: ComponentType<EditorProps<CellShape<T>>>
   attributesRenderer?: (
@@ -96,7 +97,7 @@ export type DataCellProps<T> = {
   onTouchEnd?: TouchEventHandler<HTMLTableCellElement>
   onContextMenu: (event: MouseEvent, row: number, col: number) => void
   onChange: (row: number, col: number, value: string) => void
-  onKeyUp?: KeyboardEventHandler<HTMLInputElement>
+  onKeyUp?: KeyboardEventHandler
   onRevert: () => void
   onEdit?: () => void
 }
@@ -312,7 +313,7 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
     cell: CellShape<T>,
     row: number,
     col: number,
-    valueRenderer: ValueRenderer,
+    valueRenderer: ValueRenderer<T>,
     valueViewer?: ComponentType<ValueViewerProps<T>>,
   ) => {
     const Viewer = cell.valueViewer || valueViewer || ValueViewer

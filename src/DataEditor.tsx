@@ -5,7 +5,7 @@ import {
   useEffect,
   useRef,
 } from 'react'
-import { CellShape } from './types'
+import { CellShape, EditorProps } from './types'
 
 type DataEditorProps<T> = {
   value: string
@@ -23,7 +23,7 @@ export const DataEditor = <T,>({
   onChange,
   onKeyDown,
   ...rest
-}: DataEditorProps<T>) => {
+}: EditorProps<CellShape<T>>) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
