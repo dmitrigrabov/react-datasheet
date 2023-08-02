@@ -1,4 +1,4 @@
-import { FC, KeyboardEventHandler, KeyboardEvent } from 'react'
+import { FC, KeyboardEventHandler, KeyboardEvent, ReactNode } from 'react'
 
 export type Renderer = <T>(
   cell: T,
@@ -29,7 +29,7 @@ export type CellShape<T> = {
   readonly?: boolean
   key?: string
   className?: string
-  component?: FC
+  component?: ReactNode
   forceComponent?: boolean
   disableEvents?: boolean
   disableUpdatedFlag?: boolean
@@ -37,7 +37,7 @@ export type CellShape<T> = {
   rowSpan?: number
   width?: number | string
   overflow?: 'wrap' | 'nowrap' | 'clip'
-  dataEditor?: FC<EditorProps<T>>
+  dataEditor?: FC<EditorProps<CellShape<T>>>
   valueViewer?: FC
 }
 

@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 /*
 readOnly    Bool    false   Cell will never go in edit mode
 key String  undefined   By default, each cell is given the key of col number and row number. This would override that key
@@ -30,3 +29,4 @@ viewer func  undefined A component used to render the cell's value when not bein
 // };
 
 // export default CellShape;
+

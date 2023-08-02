@@ -1,9 +1,12 @@
 import {
   ComponentType,
-  FC,
   KeyboardEvent,
+  KeyboardEventHandler,
   MouseEvent,
+  TdHTMLAttributes,
+  TouchEventHandler,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -15,8 +18,8 @@ import {
   UP_KEY,
   DOWN_KEY,
 } from './keys'
-import Cell from './Cell'
-import DataEditor from './DataEditor'
+import {Cell} from './Cell'
+import { DataEditor } from './DataEditor'
 import ValueViewer from './ValueViewer'
 import { renderValue, renderData } from './renderHelpers'
 import { EditorProps, Renderer, CellShape, ValueViewerProps } from 'types'
@@ -57,7 +60,7 @@ const initialValue = <T,>({
 
 const widthStyle = <T,>(cell: CellShape<T>) => {
   const width = typeof cell.width === 'number' ? cell.width + 'px' : cell.width
-  return width ? { width } : null
+  return width ? { width } : undefined
 }
 
 type DataCellProps<T> = {
@@ -72,47 +75,83 @@ type DataCellProps<T> = {
   cellRenderer?: ComponentType
   valueRenderer: Renderer
   dataRenderer: Renderer
-  valueViewer?: () => void
-  dataEditor?: () => void
-  attributesRenderer?: () => void
+  valueViewer?: ComponentType<ValueViewerProps<T>>
+  dataEditor?: ComponentType<EditorProps<CellShape<T>>>
+  attributesRenderer?: (cell: CellShape<T>, row: number, col: number) => TdHTMLAttributes<HTMLTableCellElement>
   onNavigate: (event: KeyboardEvent, b: boolean) => void
   onMouseDown: (row: number, col: number, event: MouseEvent) => void
   onMouseOver: (row: number, col: number) => void
   onDoubleClick: (row: number, col: number) => void
+  onTouchEnd: TouchEventHandler<HTMLTableCellElement>
   onContextMenu: (event: MouseEvent, row: number, col: number) => void
   onChange: (row: number, col: number, value: string) => void
+  onKeyUp: KeyboardEventHandler<HTMLInputElement>
   onRevert: () => void
   onEdit?: () => void
 }
 
-const DataCell = <T,>({
-  cell,
-  row,
-  col,
-  valueRenderer,
-  dataRenderer,
-  onChange,
-  onNavigate,
-  onRevert,
-  onMouseDown,
-  onMouseOver,
-  onDoubleClick,
-  onContextMenu,
-  forceEdit = false,
-  selected = false,
-  editing = false,
-  clearing = false,
-  cellRenderer = Cell,
-  cellRenderer: CellRenderer,
-}: DataCellProps<T>) => {
+const DataCell = <T,>(props: DataCellProps<T>) => {
+  const {  cell,
+    row,
+    col,
+    valueRenderer,
+    dataRenderer,
+    onChange,
+    onNavigate,
+    onRevert,
+    onMouseDown,
+    onMouseOver,
+    onDoubleClick,
+    onContextMenu,
+    onTouchEnd,
+    onKeyUp,
+    forceEdit = false,
+    selected = false,
+    editing = false,
+    clearing = false,
+    cellRenderer:CellRenderer = Cell,
+    dataEditor,
+    valueViewer,
+    attributesRenderer,
+  } = props
+
   const [updated, setUpdated] = useState(false)
   const [reverting, setReverting] = useState(false)
   const [committing, setCommitting] = useState(false)
   const [value, setValue] = useState('')
 
+  const prevProps = useRef<DataCellProps<T>>(props)
+  const timeoutRef = useRef<NodeJS.Timeout>()
+
+  useEffect(() => {
+    if (
+      !cell.disableUpdatedFlag &&
+      initialValue(prevProps.current) !== initialValue(props)
+    ) {
+      setUpdated(true)
+      timeoutRef.current = setTimeout(() => setUpdated(false), 700);
+    }
+
+    if (editing === true && prevProps.current.editing === false) {
+      const value = clearing ? '' : initialData(props);
+      setValue(value)
+      setReverting(false)
+    }
+  
+    if (
+      prevProps.current.editing === true &&
+      editing === false &&
+      !reverting &&
+      !committing &&
+      value !== initialData(props)
+    ) {
+      onChange(row, col, value);
+    }
+  }, [props])
+
   useEffect(() => {
     return () => {
-      clearTimeout(this.timeout)
+      clearTimeout(timeoutRef.current)
     }
   })
 
@@ -208,10 +247,10 @@ const DataCell = <T,>({
 
   const renderEditor = <T,>(
     editing: boolean,
-    cell: T,
+    cell: CellShape<T>,
     row: number,
     col: number,
-    dataEditor: ComponentType<EditorProps<T>>,
+    dataEditor?: ComponentType<EditorProps<CellShape<T>>>,
   ) => {
     if (editing) {
       const Editor = cell.dataEditor || dataEditor || DataEditor
@@ -235,7 +274,7 @@ const DataCell = <T,>({
     row: number,
     col: number,
     valueRenderer: Renderer,
-    valueViewer: ComponentType<ValueViewerProps<T>>,
+    valueViewer?: ComponentType<ValueViewerProps<T>>,
   ) => {
     const Viewer = cell.valueViewer || valueViewer || ValueViewer
     const value = renderValue(cell, row, col, valueRenderer)
@@ -274,6 +313,7 @@ const DataCell = <T,>({
       onMouseOver={handleMouseOver}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
+      onTouchEnd={onTouchEnd}
       onKeyUp={onKeyUp}
     >
       {content}
