@@ -13,13 +13,13 @@ export type DataRenderer<T> = (
   cell: CellShape<T>,
   row: number,
   col: number,
-) => T | undefined
+) => T | string | undefined // TODO something else might work better here
 
 export type ValueRenderer<T> = (
   cell: CellShape<T>,
   row: number,
   col: number,
-) => string | undefined
+) => T | string | undefined
 
 export interface SheetRendererProps<T> {
   /** The same data array as from main ReactDataSheet component */
@@ -80,7 +80,7 @@ export type CellRendererProps<T> = {
   style?: CSSProperties
   /** Is the cell currently selected */
   selected: boolean
-  /** Is the cell currently being edited */
+  /** Is the cell currently being edited */
   editing: boolean
   /** Was the cell recently updated */
   updated: boolean

@@ -26,7 +26,9 @@
     "format": "prettier --write '{src,test}/**/*.js' --ignore-path docs,.gitignore",
     "format-test": "prettier-check '**/*.js'",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "types": "tsc --noEmit --skipLibCheck"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "5.17.0",

@@ -28,7 +28,6 @@ import {
   ValueViewerProps,
 } from 'types'
 import {
-  UIEvent,
   KeyboardEvent,
   ComponentType,
   MouseEvent,
@@ -49,7 +48,7 @@ const range = (start: number, end: number) => {
   return array
 }
 
-const defaultParsePaste = <T,>(str: string): string[][] => {
+const defaultParsePaste = (str: string): string[][] => {
   return str.split(/\r\n|\n|\r/).map(row => row.split('\t'))
 }
 
@@ -72,6 +71,10 @@ type RowPasteData<T> = {
   data: string
 }
 
+type DataAttributeKey = `data-${string}`
+
+type DataAttributes = Record<DataAttributeKey, string>
+
 type DataSheetProps<T> = {
   data: CellShape<T>[][]
   className?: string
@@ -93,9 +96,9 @@ type DataSheetProps<T> = {
   selected?: CellSelection | undefined
   valueRenderer: ValueRenderer<T>
   dataRenderer?: DataRenderer<T>
-  sheetRenderer: SheetRenderer<T>
-  rowRenderer: RowRenderer<T>
-  cellRenderer: CellRendererType<T>
+  sheetRenderer?: SheetRenderer<T>
+  rowRenderer?: RowRenderer<T>
+  cellRenderer?: CellRendererType<T>
   valueViewer?: ComponentType<ValueViewerProps<T>>
   dataEditor?: ComponentType<EditorProps<CellShape<T>>>
   parsePaste?: (str: string) => string[][]
@@ -103,7 +106,9 @@ type DataSheetProps<T> = {
     cell: CellShape<T>,
     row: number,
     col: number,
-  ) => TdHTMLAttributes<HTMLTableCellElement>
+  ) =>
+    | (TdHTMLAttributes<HTMLTableCellElement> & DataAttributes)
+    | null
   keyFn?: (row: number, col?: number) => string
   handleCopy?: HandleCopyFunction<T>
   editModeChanged?: (inEditMode: boolean) => void
@@ -475,8 +480,12 @@ export const DataSheet = <T,>(props: DataSheetProps<T>) => {
     const currentCell = !noCellsSelected && data[start.i][start.j]
     const equationKeysPressed =
       [
-        187 /* equal */, 189 /* substract */, 190 /* period */, 107 /* add */,
-        109 /* decimal point */, 110,
+        187 /* equal */,
+        189 /* substract */,
+        190 /* period */,
+        107 /* add */,
+        109 /* decimal point */,
+        110,
       ].indexOf(keyCode) > -1
 
     if (noCellsSelected || ctrlKeyPressed) {
@@ -675,7 +684,7 @@ export const DataSheet = <T,>(props: DataSheetProps<T>) => {
       return
     }
 
-    if (Boolean(editing)) {
+    if (editing) {
       const currentCell = editing ? data[editing.i][editing.j] : undefined
       const offset = e.shiftKey ? -1 : 1
       if (currentCell && currentCell.component && !currentCell.forceComponent) {
@@ -696,14 +705,14 @@ export const DataSheet = <T,>(props: DataSheetProps<T>) => {
   }
 
   const onContextMenu = (evt: MouseEvent, i: number, j: number) => {
-    let cell = data[i][j]
+    const cell = data[i][j]
     if (props.onContextMenu) {
       props.onContextMenu(evt, cell, i, j)
     }
   }
 
   const onDoubleClick = (i: number, j: number) => {
-    let cell = data[i][j]
+    const cell = data[i][j]
     if (!cell.readOnly) {
       _setState({ editing: { i: i, j: j }, forceEdit: true, clear: undefined })
     }
@@ -711,7 +720,7 @@ export const DataSheet = <T,>(props: DataSheetProps<T>) => {
 
   const onMouseDown = (i: number, j: number, e: MouseEvent) => {
     const isNowEditingSameCell = editing && editing.i === i && editing.j === j
-    let updatedEditing =
+    const updatedEditing =
       !editing || editing.i !== i || editing.j !== j ? undefined : editing
 
     _setState({
@@ -722,8 +731,8 @@ export const DataSheet = <T,>(props: DataSheetProps<T>) => {
       forceEdit: !!isNowEditingSameCell,
     })
 
-    var ua = window.navigator.userAgent
-    var isIE = /MSIE|Trident/.test(ua)
+    const ua = window.navigator.userAgent
+    const isIE = /MSIE|Trident/.test(ua)
     // Listen for Ctrl + V in case of IE
     if (isIE) {
       document.addEventListener('keydown', handleIEClipboardEvents)

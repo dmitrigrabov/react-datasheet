@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-  render,
-  screen,
-  fireEvent,
-  getByRole,
-  waitFor,
-} from '@testing-library/react'
-import DataCell, { DataCellProps } from './DataCell'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent } from '@testing-library/react'
+import DataCell from './DataCell'
 import { CellShape } from 'types'
 
 const getRowContainer = () => {
@@ -20,8 +13,6 @@ const getRowContainer = () => {
 describe('DataCell', () => {
   it('renders without crashing', () => {
     const row = getRowContainer()
-
-    const user = userEvent.setup()
 
     const onMouseDown = vi.fn()
     const onMouseOver = vi.fn()
@@ -346,7 +337,7 @@ describe('DataCell', () => {
             onNavigate={onNavigate}
             onChange={onChange}
             onRevert={onRevert}
-            valueRenderer={cell => cell.value}
+            valueRenderer={innerCell => innerCell.value}
           />,
           { container: getRowContainer() },
         )
@@ -380,7 +371,7 @@ describe('DataCell', () => {
             onNavigate={onNavigate}
             onChange={onChange}
             onRevert={onRevert}
-            valueRenderer={cell => cell.value}
+            valueRenderer={innerCell => innerCell.value}
           />,
         )
 
@@ -415,7 +406,7 @@ describe('DataCell', () => {
             onNavigate={onNavigate}
             onChange={onChange}
             onRevert={onRevert}
-            valueRenderer={cell => cell.value}
+            valueRenderer={innerCell => innerCell.value}
           />,
         )
 
@@ -492,7 +483,7 @@ describe('DataCell', () => {
             onNavigate={() => {}}
             onChange={() => {}}
             onRevert={() => {}}
-            valueRenderer={cell => cell.value}
+            valueRenderer={innerCell => innerCell.value}
           />,
           { container: getRowContainer() },
         )
@@ -511,7 +502,7 @@ describe('DataCell', () => {
             onNavigate={() => {}}
             onChange={() => {}}
             onRevert={() => {}}
-            valueRenderer={cell => cell.value}
+            valueRenderer={innerCell => innerCell.value}
           />,
         )
 

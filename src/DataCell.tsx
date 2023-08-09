@@ -136,7 +136,6 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
   const timeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
-    // console.log('EFFECT CALLED')
     if (!prevProps.current) {
       prevProps.current = props
       return
@@ -149,24 +148,12 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
       setUpdated(true)
       timeoutRef.current = setTimeout(() => setUpdated(false), 700)
     }
-    // console.log('EFFECT RUNNING')
-    // console.log('CURRENT EDITING', editing)
-    // console.log('PREV EDITING', prevProps.current.editing)
 
     if (editing === true && !prevProps.current.editing) {
       const value = clearing ? '' : initialData(props)
-      // console.log('SETTING VALUE', value)
       setValue(value)
       setReverting(false)
     }
-
-    // console.log('prevEditing', prevProps.current.editing)
-    // console.log('editing', editing)
-    // console.log('reverting', reverting)
-    // console.log('committing', committing)
-    // console.log('value', value)
-    // console.log('initialData', initialData(props))
-    // console.log('')
 
     if (
       prevProps.current.editing === true &&
@@ -330,10 +317,6 @@ const DataCell = <T,>(props: DataCellProps<T>) => {
     valueRenderer,
     valueViewer,
   )
-
-  // console.log('renderedComponent', Boolean(renderedComponent))
-  // console.log('renderedEditor', Boolean(renderedEditor))
-  // console.log('renderedViewer', Boolean(renderedViewer))
 
   const content = renderedComponent || renderedEditor || renderedViewer
 

@@ -5,9 +5,9 @@ import {
   fireEvent,
   getByRole,
   waitFor,
+  within,
 } from '@testing-library/react'
 import DataCell, { DataCellProps } from './DataCell'
-import userEvent from '@testing-library/user-event'
 import { CellShape } from 'types'
 import { DataSheet } from './DataSheet'
 
@@ -24,7 +24,7 @@ describe('DataSheet component', () => {
       {
         className: 'test1',
         data: 4,
-        overflow: 'clip',
+        overflow: 'clip' as const,
       },
       {
         className: 'test2',
@@ -46,27 +46,23 @@ describe('DataSheet component', () => {
     ],
   ]
 
-  // <DataSheet
-  //   keyFn={i => 'custom_key_' + i}
-  //   className={'test'}
-  //   overflow="nowrap"
-  //   data={data}
-  //   valueRenderer={cell => cell.data}
-  //   onChange={(cell, i, j, value) => (data[i][j].data = value)}
-  // />
-
   describe('rendering with varying props', () => {
     it('renders the proper elements', () => {
       const data = getData()
 
-      const result = render(
+      render(
         <DataSheet
           keyFn={i => 'custom_key_' + i}
           className={'test'}
           overflow="nowrap"
           data={data}
-          valueRenderer={cell => (cell.data ? `${cell.data}` : '')}
-          onChange={(cell, i, j, value) => (data[i][j].data = value)}
+          valueRenderer={cell =>
+            cell.data !== undefined ? `${cell.data}` : ''
+          }
+          onChange={
+            (cell, i, j, value) =>
+              (data[i][j].data = (value as unknown) as number) // @TODO: fix this
+          }
         />,
       )
 
@@ -74,169 +70,218 @@ describe('DataSheet component', () => {
       const classes = [...screen.getByRole('table').classList.values()]
       expect(classes).toEqual(['data-grid', 'test', 'nowrap'])
 
-      // expect(wrapper.find('td.cell span').length).toEqual(4)
-      // expect(wrapper.find('td.cell span').nodes.map(n => n.innerHTML)).toEqual([
-      //   '4',
-      //   '2',
-      //   '0',
-      //   '5',
-      // ])
+      const cells = screen.getAllByRole('cell')
+
+      expect(cells.length).toEqual(4)
+      expect(cells.at(0)).toContainHTML(
+        '<td class="test1 cell clip"><span class="value-viewer">4</span></td>',
+      )
+      expect(cells.at(1)).toContainHTML(
+        '<td class="test2 cell"><span class="value-viewer">2</span></td>',
+      )
+      expect(cells.at(2)).toContainHTML(
+        '<td class="test3 cell" style="width: 25%;"><span class="value-viewer">0</span></td>',
+      )
+      expect(cells.at(3)).toContainHTML(
+        '<td class="test4 cell"><span class="value-viewer">5</span></td>',
+      )
     })
 
-    // it('renders the proper keys', () => {
-    //   expect(wrapper.find('Sheet Row').at(0).key()).toEqual('custom_key_0')
-    //   expect(wrapper.find('Sheet Row').at(1).key()).toEqual('custom_key_1')
-    //   expect(wrapper.find('DataCell').at(1).key()).toEqual('custom_key')
-    // })
+    // Removed 'renders the proper keys' since keys are not accessible
+    // Removed 'sets the proper classes for the cells' since check is included above
 
-    // it('sets the proper classes for the cells', () => {
-    //   expect(
-    //     wrapper.find('td').nodes.map(n => _.values(n.classList).sort()),
-    //   ).toEqual([
-    //     ['cell', 'clip', 'test1'],
-    //     ['cell', 'test2'],
-    //     ['cell', 'test3'],
-    //     ['cell', 'test4'],
-    //   ])
-    // })
-    // it('renders the data in the input properly if dataRenderer is set', () => {
-    //   customWrapper = mount(
-    //     <DataSheet
-    //       data={data}
-    //       dataRenderer={cell => '=+' + cell.data}
-    //       valueRenderer={cell => cell.data}
-    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
-    //     />,
-    //   )
-    //   customWrapper.find('td').first().simulate('doubleClick')
-    //   expect(customWrapper.find('td.cell input').nodes[0].value).toEqual('=+4')
-    // })
+    it('renders the data in the input properly if dataRenderer is set', () => {
+      const data = getData()
 
-    // it('renders proper elements by column', () => {
-    //   const withDates = data.map((row, index) => [
-    //     { data: new Date('2017-0' + (index + 1) + '-01') },
-    //     ...row,
-    //   ])
-    //   customWrapper = mount(
-    //     <DataSheet
-    //       data={withDates}
-    //       valueRenderer={(cell, i, j) =>
-    //         j === 0 ? cell.data.toGMTString() : cell.data
-    //       }
-    //       dataRenderer={(cell, i, j) =>
-    //         j === 0 ? cell.data.toISOString() : cell.data
-    //       }
-    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
-    //     />,
-    //   )
-    //   // expect(wrapper.find('td > span').length).toEqual(6);
-    //   expect(
-    //     customWrapper.find('td.cell span').nodes.map(n => n.innerHTML),
-    //   ).toEqual([
-    //     'Sun, 01 Jan 2017 00:00:00 GMT',
-    //     '4',
-    //     '2',
-    //     'Wed, 01 Feb 2017 00:00:00 GMT',
-    //     '0',
-    //     '5',
-    //   ])
-    // })
+      render(
+        <DataSheet
+          data={data}
+          dataRenderer={cell => '=+' + cell.data}
+          valueRenderer={cell =>
+            cell.data !== undefined ? `${cell.data}` : ''
+          }
+          onChange={
+            (cell, i, j, value) =>
+              (data[i][j].data = (value as unknown) as number) // @TODO: fix this
+          }
+        />,
+      )
 
-    // it('renders data in the input properly if dataRenderer is set by column', () => {
-    //   const withDates = data.map((row, index) => [
-    //     { data: new Date('2017-0' + (index + 1) + '-01') },
-    //     ...row,
-    //   ])
-    //   customWrapper = mount(
-    //     <DataSheet
-    //       data={withDates}
-    //       valueRenderer={(cell, i, j) =>
-    //         j === 0 ? cell.data.toGMTString() : cell.data
-    //       }
-    //       dataRenderer={(cell, i, j) =>
-    //         j === 0 ? cell.data.toISOString() : cell.data
-    //       }
-    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
-    //     />,
-    //   )
-    //   customWrapper.find('td').first().simulate('doubleClick')
-    //   expect(customWrapper.find('td.cell input').nodes[0].value).toEqual(
-    //     '2017-01-01T00:00:00.000Z',
-    //   )
-    // })
+      const cell = screen.getAllByRole('cell').at(0)
 
-    // it('renders the attributes to the cell if the attributesRenderer is set', () => {
-    //   customWrapper = mount(
-    //     <DataSheet
-    //       data={data}
-    //       valueRenderer={(cell, i, j) => cell.data}
-    //       dataRenderer={(cell, i, j) => cell.data}
-    //       attributesRenderer={(cell, i, j) => {
-    //         if (i === 0 && j === 0) {
-    //           return { 'data-hint': 'Not valid' }
-    //         } else if (i === 1 && j === 1) {
-    //           return { 'data-hint': 'Valid' }
-    //         }
+      fireEvent.doubleClick(cell as HTMLElement)
 
-    //         return null
-    //       }}
-    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
-    //     />,
-    //   )
+      const input = within(cell as HTMLElement).getByRole('textbox')
 
-    //   expect(
-    //     customWrapper.find('td.cell').first().props()['data-hint'],
-    //   ).toEqual('Not valid')
-    //   expect(customWrapper.find('td.cell').last().props()['data-hint']).toEqual(
-    //     'Valid',
-    //   )
-    // })
+      expect(input).toHaveValue('=+4')
+    })
 
-    // it('renders a component properly', () => {
-    //   customWrapper = mount(
-    //     <DataSheet
-    //       data={[
-    //         [
-    //           {
-    //             component: (
-    //               <div className={'custom-component'}>COMPONENT RENDERED</div>
-    //             ),
-    //           },
-    //         ],
-    //       ]}
-    //       valueRenderer={cell => 'VALUE RENDERED'}
-    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
-    //     />,
-    //   )
-    //   expect(customWrapper.find('td').text()).toEqual('VALUE RENDERED')
-    //   customWrapper.find('td').first().simulate('doubleClick')
-    //   expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
-    // })
+    it('renders proper elements by column', () => {
+      const data = getData()
 
-    // it('forces a component rendering', () => {
-    //   customWrapper = mount(
-    //     <DataSheet
-    //       data={[
-    //         [
-    //           {
-    //             forceComponent: true,
-    //             component: (
-    //               <div className={'custom-component'}>COMPONENT RENDERED</div>
-    //             ),
-    //           },
-    //         ],
-    //       ]}
-    //       valueRenderer={cell => 'VALUE RENDERED'}
-    //       onChange={(cell, i, j, value) => (data[i][j].data = value)}
-    //     />,
-    //   )
-    //   expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
-    //   customWrapper.find('td').first().simulate('mousedown')
-    //   customWrapper.find('td').first().simulate('mouseover')
-    //   customWrapper.find('td').first().simulate('doubleClick')
-    //   expect(customWrapper.state('start')).toEqual({ i: 0, j: 0 })
-    //   expect(customWrapper.find('td').text()).toEqual('COMPONENT RENDERED')
-    // })
+      const withDates = data.map((row, rowIndex) => [
+        { data: new Date('2017-0' + (rowIndex + 1) + '-01') },
+        ...row,
+      ])
+
+      render(
+        <DataSheet<Date | number>
+          data={withDates}
+          valueRenderer={(cell, i, j) =>
+            j === 0 && cell.data instanceof Date
+              ? cell.data.toUTCString()
+              : cell.data
+          }
+          dataRenderer={(cell, i, j) =>
+            j === 0 && cell.data instanceof Date
+              ? cell.data.toISOString()
+              : cell.data
+          }
+          onChange={(cell, i, j, value) =>
+            (data[i][j].data = (value as unknown) as number)
+          }
+        />,
+      )
+
+      const cells = screen.getAllByRole('cell')
+
+      expect(cells.length).toEqual(6)
+      expect(cells.at(0)).toHaveTextContent('Sun, 01 Jan 2017 00:00:00 GMT')
+      expect(cells.at(1)).toHaveTextContent('4')
+      expect(cells.at(2)).toHaveTextContent('2')
+      expect(cells.at(3)).toHaveTextContent('Wed, 01 Feb 2017 00:00:00 GMT')
+      expect(cells.at(4)).toHaveTextContent('0')
+      expect(cells.at(5)).toHaveTextContent('5')
+    })
+
+    it('renders data in the input properly if dataRenderer is set by column', () => {
+      const data = getData()
+
+      const withDates = data.map((row, index) => [
+        { data: new Date('2017-0' + (index + 1) + '-01') },
+        ...row,
+      ])
+
+      render(
+        <DataSheet<Date | number>
+          data={withDates}
+          data-thing="test"
+          valueRenderer={(cell, i, j) =>
+            j === 0 && cell.data instanceof Date
+              ? cell.data.toUTCString()
+              : cell.data
+          }
+          dataRenderer={(cell, i, j) =>
+            j === 0 && cell.data instanceof Date
+              ? cell.data.toISOString()
+              : cell.data
+          }
+          onChange={(cell, i, j, value) =>
+            (data[i][j].data = (value as unknown) as number)
+          }
+        />,
+      )
+
+      const cell = screen.getAllByRole('cell').at(0)
+
+      fireEvent.doubleClick(cell as HTMLElement)
+
+      const input = within(cell as HTMLElement).getByRole('textbox')
+
+      expect(input).toHaveValue('2017-01-01T00:00:00.000Z')
+    })
+
+    it('renders the attributes to the cell if the attributesRenderer is set', () => {
+      const data = getData()
+
+      render(
+        <DataSheet
+          data={data}
+          valueRenderer={cell => cell.data}
+          dataRenderer={cell => cell.data}
+          attributesRenderer={(cell, i, j) => {
+            if (i === 0 && j === 0) {
+              return { 'data-hint': 'Not valid' }
+            } else if (i === 1 && j === 1) {
+              return { 'data-hint': 'Valid' }
+            }
+
+            return null
+          }}
+          onChange={(cell, i, j, value) =>
+            (data[i][j].data = (value as unknown) as number)
+          }
+        />,
+      )
+
+      const cells = screen.getAllByRole('cell')
+
+      const firstCell = cells.at(0)
+      expect(firstCell).toHaveAttribute('data-hint', 'Not valid')
+
+      const lastCell = cells.at(cells.length - 1)
+      expect(lastCell).toHaveAttribute('data-hint', 'Valid')
+    })
+
+    it('renders a component properly', () => {
+      const data = getData()
+
+      render(
+        <DataSheet
+          data={[
+            [
+              {
+                component: (
+                  <div className="custom-component">COMPONENT RENDERED</div>
+                ),
+              },
+            ],
+          ]}
+          valueRenderer={() => 'VALUE RENDERED'}
+          onChange={(cell, i, j, value) =>
+            (data[i][j].data = (value as unknown) as number)
+          }
+        />,
+      )
+      const cell = screen.getByRole('cell')
+
+      expect(cell).toHaveTextContent('VALUE RENDERED')
+
+      fireEvent.doubleClick(cell)
+
+      expect(cell).toHaveTextContent('COMPONENT RENDERED')
+    })
+
+    it('forces a component rendering', () => {
+      const data = getData()
+
+      render(
+        <DataSheet
+          data={[
+            [
+              {
+                forceComponent: true,
+                component: (
+                  <div className={'custom-component'}>COMPONENT RENDERED</div>
+                ),
+              },
+            ],
+          ]}
+          valueRenderer={() => 'VALUE RENDERED'}
+          onChange={(cell, i, j, value) =>
+            (data[i][j].data = (value as unknown) as number)
+          }
+        />,
+      )
+
+      const cell = screen.getByRole('cell')
+
+      expect(cell).toHaveTextContent('COMPONENT RENDERED')
+      fireEvent.mouseDown(cell)
+      fireEvent.mouseOver(cell)
+      fireEvent.doubleClick(cell)
+      expect(cell).toHaveTextContent('COMPONENT RENDERED')
+    })
 
     // it('handles  a custom editable component and exits on ENTER_KEY', done => {
     //   customWrapper = mount(
