@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 /*
 readOnly    Bool    false   Cell will never go in edit mode
 key String  undefined   By default, each cell is given the key of col number and row number. This would override that key
@@ -13,20 +12,21 @@ overflow    'wrap'|'nowrap'| 'clip' undefined   How to render overflow text. Ove
 editor func  undefined A component used to render the cell's value when being edited
 viewer func  undefined A component used to render the cell's value when not being edited
 */
-const CellShape = {
-  readOnly: PropTypes.bool,
-  key: PropTypes.string,
-  className: PropTypes.string,
-  component: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
-  forceComponent: PropTypes.bool,
-  disableEvents: PropTypes.bool,
-  disableUpdatedFlag: PropTypes.bool,
-  colSpan: PropTypes.number,
-  rowSpan: PropTypes.number,
-  width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  overflow: PropTypes.oneOf(['wrap', 'nowrap', 'clip']),
-  dataEditor: PropTypes.func,
-  valueViewer: PropTypes.func,
-};
+// const CellShape = {
+//   readOnly: PropTypes.bool,
+//   key: PropTypes.string,
+//   className: PropTypes.string,
+//   component: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
+//   forceComponent: PropTypes.bool,
+//   disableEvents: PropTypes.bool,
+//   disableUpdatedFlag: PropTypes.bool,
+//   colSpan: PropTypes.number,
+//   rowSpan: PropTypes.number,
+//   width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+//   overflow: PropTypes.oneOf(['wrap', 'nowrap', 'clip']),
+//   dataEditor: PropTypes.func,
+//   valueViewer: PropTypes.func,
+// };
 
-export default CellShape;
+// export default CellShape;
+

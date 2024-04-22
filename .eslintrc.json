@@ -1,0 +1,12 @@
+{
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "root": true,
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-shadow": "error"
+  }
+}
